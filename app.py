@@ -1831,6 +1831,7 @@ def render_retirement():
             def update_yield_num():
                 st.session_state.yield_sl = st.session_state.yield_num
             
+            c_a, c_b = st.columns(2)
             with c_a:
                 st.markdown("물가상승률(%)")
                 c_a1, c_a2 = st.columns([2, 1])
