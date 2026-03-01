@@ -5,12 +5,48 @@ import plotly.graph_objects as go
 import plotly.express as px
 from station_data import COMPLEX_DB, REGION_DB
 
+import streamlit.components.v1 as components
+
 # 1. Page Configuration
 st.set_page_config(
     page_title="Incar Pro Asset Management Lab",
     page_icon="💎",
     layout="wide",
     initial_sidebar_state="expanded"
+)
+
+# 브라우저 자동 완성 기능 전역 비활성화 스크립트
+components.html(
+    """
+    <script>
+        const inputs = window.parent.document.querySelectorAll('input');
+        for (const input of inputs) {
+            input.setAttribute('autocomplete', 'off');
+        }
+        
+        // 동적으로 추가되는 input 요소들을 위한 옵저버
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // ELEMENT_NODE
+                        if (node.tagName === 'INPUT') {
+                            node.setAttribute('autocomplete', 'off');
+                        }
+                        const childInputs = node.querySelectorAll ? node.querySelectorAll('input') : [];
+                        childInputs.forEach(input => input.setAttribute('autocomplete', 'off'));
+                    }
+                });
+            });
+        });
+        
+        observer.observe(window.parent.document.body, {
+            childList: true,
+            subtree: true
+        });
+    </script>
+    """,
+    height=0,
+    width=0,
 )
 
 # 2. Global Styling (CSS)
