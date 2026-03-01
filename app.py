@@ -2329,11 +2329,20 @@ def render_target_fund():
         annual_save = (req_monthly + tf_add_prem) * 12
         trials = 1000
         
-        # --- 적금 시뮬레이션 (단리, 세후 실질 이자율 반영) ---
+        # --- 메트릭 및 장기 투자 결과 저장용 ---
+        long_periods = [3, 5, 10, 15]
+        savings_long = []
+        fund_long = []
+        etf_long = []
+        
+        # --- 적금,펀드,ETF 메트릭용 변수 ---
         savings_balances = [0]
         monthly_deposit = req_monthly + tf_add_prem
-        for yr in range(period):
-            months = (yr + 1) * 12
+        
+        # --- 기간별 자산 비교 (Top Priority) ---
+        for lp in long_periods:
+            # 적금
+            months = lp * 12
             principal = monthly_deposit * months
             pre_tax_interest = monthly_deposit * (savings_rate / 100) * months * (months + 1) / 24
             after_tax_interest = pre_tax_interest * (1 - savings_tax)
@@ -2355,7 +2364,6 @@ def render_target_fund():
             
             # 변액ETF
             e_results = []
-            etf_management_fee_rate = 0.00755
             for _ in range(500):
                 e_val = 0
                 for yr in range(lp):
@@ -2370,12 +2378,83 @@ def render_target_fund():
 
                     ret = np.random.normal(etf_rate / 100, etf_vol)
                     gain = e_val * ret
-                    fee_deducted = e_val * etf_management_fee_rate
+                    fee_deducted = e_val * 0.00755
                     
                     e_val = e_val + gain - fee_deducted + total_injected
                     e_val = max(0, e_val)
                 e_results.append(e_val)
             etf_long.append(np.median(e_results))
+            
+        # --- 적금 몬테카를로 (단리, 세후 실질 이자율 반영) - 그래프용 ---
+        for yr in range(period):
+            months = (yr + 1) * 12
+            principal = monthly_deposit * months
+            pre_tax_interest = monthly_deposit * (savings_rate / 100) * months * (months + 1) / 24
+            after_tax_interest = pre_tax_interest * (1 - savings_tax)
+            savings_balances.append(principal + after_tax_interest)
+            
+        # --- 펀드 몬테카를로 (변동성 + 세금 + 펀드보수) - 그래프용 ---
+        fund_scenarios = []
+        for _ in range(trials):
+            bal = [0]
+            curr_f = 0
+            for yr in range(period):
+                ret = np.random.normal(fund_rate / 100, fund_vol)
+                gain = curr_f * ret
+                tax_deducted = max(0, gain) * fund_tax
+                fee_deducted = curr_f * fund_fee_rate
+                curr_f = curr_f + gain - tax_deducted - fee_deducted + annual_save
+                curr_f = max(0, curr_f)
+                bal.append(curr_f)
+            fund_scenarios.append(bal)
+        fund_np = np.array(fund_scenarios)
+        fund_p10 = np.percentile(fund_np, 10, axis=0)
+        fund_p50 = np.percentile(fund_np, 50, axis=0)
+        fund_p90 = np.percentile(fund_np, 90, axis=0)
+        
+        # --- 변액ETF 몬테카를로 (변동성 + 비과세 + 보험사업비/보수 차감) - 그래프용 ---
+        etf_scenarios = []
+        etf_management_fee_rate = 0.00755
+        
+        for _ in range(trials):
+            bal = [0]
+            curr_e = 0
+            for yr in range(period):
+                if yr < 10:
+                    basic_fee_rate = 0.075
+                else:
+                    basic_fee_rate = 0.0264
+                
+                injected_basic = req_monthly * (1 - basic_fee_rate) * 12
+                injected_add = tf_add_prem * 12
+                total_injected = injected_basic + injected_add
+                
+                ret = np.random.normal(etf_rate / 100, etf_vol)
+                gain = curr_e * ret
+                fee_deducted = curr_e * etf_management_fee_rate
+                
+                curr_e = curr_e + gain - fee_deducted + total_injected
+                curr_e = max(0, curr_e)
+                bal.append(curr_e)
+            etf_scenarios.append(bal)
+        etf_np = np.array(etf_scenarios)
+        etf_p10 = np.percentile(etf_np, 10, axis=0)
+        etf_p50 = np.percentile(etf_np, 50, axis=0)
+        etf_p90 = np.percentile(etf_np, 90, axis=0)
+        
+        # === 3종 비교 메트릭 ===
+        savings_final = savings_balances[-1]
+        fund_final = fund_p50[-1]
+        etf_final = etf_p50[-1]
+        
+        total_paid = annual_save * period
+        
+        savings_profit = savings_final - total_paid
+        fund_profit = fund_final - total_paid
+        etf_profit = etf_final - total_paid
+        
+        etf_vs_savings = etf_final - savings_final
+        etf_vs_fund = etf_final - fund_final
         
         fig_long = go.Figure()
         
