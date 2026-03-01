@@ -255,6 +255,14 @@ st.markdown("""
     /* Fix overlap in steps by ensuring block formatting context */
     .step-box > div { display: block; width: 100%; }
     
+    /* Metric Delta Truncation Fix */
+    [data-testid="stMetricDelta"] > div {
+        white-space: pre-wrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        word-break: keep-all !important;
+    }
+    
     .step-title { color: #1e3a8a; font-weight: 700; font-size: 0.95rem; margin-bottom: 5px; line-height: 1.4; }
     .step-content { color: #475569; font-size: 0.9rem; line-height: 1.6; }
     .highlight { color: #2563eb; font-weight: 700; background-color: #eff6ff; padding: 2px 6px; border-radius: 4px; }
@@ -2337,7 +2345,7 @@ def render_target_fund():
             c1.metric("투자 시 매월 저축액", f"{f_w(req_monthly)} 원", delta=f"적금(단리) 시 {f_w(sav_req_monthly)}원 필요", delta_color="off")
         else:
             c1.metric("투자 시 예상 자산", f"{f_w(expected_total)} 원", delta=f"적금(단리) 시 {f_w(sav_expected_total)}원 예상", delta_color="off")
-        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 시 이자 {f_w(sav_total_interest)}원", delta_color="off")
+        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 이자 {f_w(sav_total_interest)}원", delta_color="off")
         
         # Growth Curve Chart
         growth_months = list(range(months + 1))
