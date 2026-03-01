@@ -2343,11 +2343,33 @@ def render_target_fund():
         st.subheader("📊 자금 달성 분석")
         
         c1, c2 = st.columns(2)
-        if calc_type == "목표 필요 자금":
-            c1.metric("투자 시 매월 저축액", f"{f_w(req_monthly)} 원", delta=f"적금(단리) 시 {f_w(sav_req_monthly)}원\n필요", delta_color="off")
-        else:
-            c1.metric("투자 시 예상 자산", f"{f_w(expected_total)} 원", delta=f"적금(단리) 시 {f_w(sav_expected_total)}원\n예상", delta_color="off")
-        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 이자\n{f_w(sav_total_interest)}원", delta_color="off")
+        
+        # HTML 카드 스타일을 위한 공통 래퍼 함수
+        def draw_kpi_card(title, main_val, sub_label, sub_val, is_result1=True):
+            bg_color = "#f0fdf4" if is_result1 else "#eff6ff"
+            border_color = "#bbf7d0" if is_result1 else "#bfdbfe"
+            icon = "🎯" if is_result1 else "💰"
+            return f"""
+            <div style='background-color: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); height: 100%; margin-bottom: 12px;'>
+                <div style='color: #64748b; font-size: 0.95rem; font-weight: 600; margin-bottom: 8px;'><span style='margin-right:4px;'>{icon}</span> {title}</div>
+                <div style='color: #1e293b; font-size: 1.8rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;'>{main_val} <span style='font-size: 1.1rem; color: #475569; font-weight:600;'>원</span></div>
+                <div style='background-color: {bg_color}; border: 1px solid {border_color}; padding: 12px 14px; border-radius: 8px; color: #334155; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center;'>
+                    <span style='font-weight: 600; color: #475569;'>{sub_label}</span>
+                    <span style='font-weight: 700; color: #1e3a8a;'>{sub_val}원</span>
+                </div>
+            </div>
+            """
+            
+        with c1:
+            if calc_type == "목표 필요 자금":
+                html_c1 = draw_kpi_card("투자(복리) 시 매월 저축액", f_w(req_monthly), "단리 적금 시 필요액:", f_w(sav_req_monthly), True)
+            else:
+                html_c1 = draw_kpi_card("투자(복리) 시 예상 자산", f_w(expected_total), "단리 적금 시 예상액:", f_w(sav_expected_total), True)
+            st.markdown(html_c1, unsafe_allow_html=True)
+            
+        with c2:
+            html_c2 = draw_kpi_card("투자 시 예상 수익 (이자)", f_w(total_interest), "단리 적금 시 이자:", f_w(sav_total_interest), False)
+            st.markdown(html_c2, unsafe_allow_html=True)
         
         # Growth Curve Chart
         growth_months = list(range(months + 1))
