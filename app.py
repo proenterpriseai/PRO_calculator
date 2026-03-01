@@ -2362,13 +2362,13 @@ def render_target_fund():
             
         with c1:
             if calc_type == "목표 필요 자금":
-                html_c1 = draw_kpi_card("투자(복리) 시 매월 저축액", f_w(req_monthly), "단리 적금 시 필요액:", f_w(sav_req_monthly), True)
+                html_c1 = draw_kpi_card("투자(복리) 시 매월 저축액", f_w(req_monthly), "적금 필요액:", f_w(sav_req_monthly), True)
             else:
-                html_c1 = draw_kpi_card("투자(복리) 시 예상 자산", f_w(expected_total), "단리 적금 시 예상액:", f_w(sav_expected_total), True)
+                html_c1 = draw_kpi_card("투자(복리) 시 예상 자산", f_w(expected_total), "적금 예상액:", f_w(sav_expected_total), True)
             st.markdown(html_c1, unsafe_allow_html=True)
             
         with c2:
-            html_c2 = draw_kpi_card("투자 시 예상 수익 (이자)", f_w(total_interest), "단리 적금 시 이자:", f_w(sav_total_interest), False)
+            html_c2 = draw_kpi_card("투자 시 예상 수익 (이자)", f_w(total_interest), "적금 이자:", f_w(sav_total_interest), False)
             st.markdown(html_c2, unsafe_allow_html=True)
         
         # Growth Curve Chart
