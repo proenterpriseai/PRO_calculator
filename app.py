@@ -2306,9 +2306,9 @@ def render_target_fund():
     if is_mc_tf:
         with col_t2:
             cc1, cc2, cc3 = st.columns(3)
-            savings_rate = cc1.number_input("적금 금리(%)", value=3.0, step=0.1, key="tf_sav_rate")
-            fund_rate = cc2.number_input("펀드 기대수익률(%)", value=rate, step=0.1, key="tf_fund_rate")
-            etf_rate = cc3.number_input("변액ETF 기대수익률(%)", value=rate, step=0.1, key="tf_etf_rate")
+            savings_rate = cc1.number_input("적금 금리(%)", value=2.5, step=0.1, key="tf_sav_rate")
+            fund_rate = cc2.number_input("펀드 기대수익률(%)", value=7.0, step=0.1, key="tf_fund_rate")
+            etf_rate = cc3.number_input("변액ETF 기대수익률(%)", value=10.0, step=0.1, key="tf_etf_rate")
             
         # === 상품별 파라미터 설정 ===
         # 적금: 이자소득세 15.4%
