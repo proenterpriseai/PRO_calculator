@@ -2247,6 +2247,14 @@ def render_target_fund():
     def update_tf_period_num():
         st.session_state.tf_period_sl = st.session_state.tf_period_num
 
+    if 'tf_sav_rate_sl' not in st.session_state: st.session_state.tf_sav_rate_sl = 2.5
+    if 'tf_sav_rate_num' not in st.session_state: st.session_state.tf_sav_rate_num = 2.5
+
+    def update_tf_sav_rate_sl():
+        st.session_state.tf_sav_rate_num = st.session_state.tf_sav_rate_sl
+    def update_tf_sav_rate_num():
+        st.session_state.tf_sav_rate_sl = st.session_state.tf_sav_rate_num
+
     if 'tf_rate_sl' not in st.session_state: st.session_state.tf_rate_sl = 5.0
     if 'tf_rate_num' not in st.session_state: st.session_state.tf_rate_num = 5.0
 
@@ -2262,6 +2270,11 @@ def render_target_fund():
             with c1: period = st.slider("준비 기간", min_value=1, max_value=30, key='tf_period_sl', label_visibility="collapsed", on_change=update_tf_period_sl)
             with c2: period = st.number_input("기간 입력", min_value=1, max_value=30, key='tf_period_num', label_visibility="collapsed", on_change=update_tf_period_num)
             
+            st.markdown("적금 금리(%)")
+            cs1, cs2 = st.columns([2, 1])
+            with cs1: top_sav_rate = st.slider("적금 금리", min_value=1.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=update_tf_sav_rate_sl)
+            with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=1.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=update_tf_sav_rate_num)
+
             st.markdown("기대 수익률(%)")
             c3, c4 = st.columns([2, 1])
             with c3: rate = st.slider("기대 수익률", min_value=1.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=update_tf_rate_sl)
@@ -2271,7 +2284,9 @@ def render_target_fund():
             # Removed 세후 수익률 적용
     else:
         # Read from state
+        # Read from state
         period = st.session_state.get('tf_period_sl', 5)
+        top_sav_rate = st.session_state.get('tf_sav_rate_sl', 2.5)
         rate = st.session_state.get('tf_rate_sl', 5.0)
 
     actual_rate = rate
@@ -2279,6 +2294,7 @@ def render_target_fund():
     # Logic
     monthly_rate = actual_rate / 100 / 12
     months = period * 12
+    sav_r = top_sav_rate / 100
     
     if calc_type == "목표 필요 자금":
         if monthly_rate == 0:
@@ -2286,16 +2302,31 @@ def render_target_fund():
         else:
             req_monthly = target_amt * monthly_rate / ((1 + monthly_rate)**months - 1)
         expected_total = target_amt
+        
+        if sav_r == 0:
+            sav_req_monthly = target_amt / months
+        else:
+            sav_req_monthly = target_amt / (months + sav_r * months * (months + 1) / 24)
+        sav_expected_total = target_amt
     else:
         req_monthly = input_monthly
+        sav_req_monthly = input_monthly
         if monthly_rate == 0:
             expected_total = req_monthly * months
         else:
             expected_total = req_monthly * ((1 + monthly_rate)**months - 1) / monthly_rate
         target_amt = expected_total  # For chart goal line and monte carlo consistency
         
+        if sav_r == 0:
+            sav_expected_total = sav_req_monthly * months
+        else:
+            sav_expected_total = sav_req_monthly * months + sav_req_monthly * sav_r * months * (months + 1) / 24
+            
     total_principal = req_monthly * months
     total_interest = expected_total - total_principal
+    
+    sav_total_principal = sav_req_monthly * months
+    sav_total_interest = sav_expected_total - sav_total_principal
 
 
     with col_result:
@@ -2303,21 +2334,28 @@ def render_target_fund():
         
         c1, c2 = st.columns(2)
         if calc_type == "목표 필요 자금":
-            c1.metric("필요 매월 저축액", f"{f_w(req_monthly)} 원", delta="목표 달성")
+            c1.metric("투자 시 매월 저축액", f"{f_w(req_monthly)} 원", delta=f"적금(단리) 시 {f_w(sav_req_monthly)}원 필요", delta_color="off")
         else:
-            c1.metric("예상 목표 자산", f"{f_w(expected_total)} 원", delta="달성 예상")
-        c2.metric("총 예상 수익", f"{f_w(total_interest)} 원", delta="복리 효과")
+            c1.metric("투자 시 예상 자산", f"{f_w(expected_total)} 원", delta=f"적금(단리) 시 {f_w(sav_expected_total)}원 예상", delta_color="off")
+        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 시 이자 {f_w(sav_total_interest)}원", delta_color="off")
         
         # Growth Curve Chart
         growth_months = list(range(months + 1))
         growth_balances = []
+        sav_balances = []
         curr_g = 0
         for m in growth_months:
             growth_balances.append(curr_g)
+            if m == 0:
+                sav_balances.append(0)
+            else:
+                curr_s = req_monthly * m + req_monthly * sav_r * m * (m + 1) / 24
+                sav_balances.append(curr_s)
             curr_g = curr_g * (1 + monthly_rate) + req_monthly
         
         fig_growth = go.Figure()
-        fig_growth.add_trace(go.Scatter(x=growth_months, y=growth_balances, mode='lines', line=dict(width=4, color='#e11d48'), name='자산 성장'))
+        fig_growth.add_trace(go.Scatter(x=growth_months, y=growth_balances, mode='lines', line=dict(width=4, color='#e11d48'), name='투자 시 자산 성장 (복리)'))
+        fig_growth.add_trace(go.Scatter(x=growth_months, y=sav_balances, mode='lines', line=dict(width=3, color='#94a3b8', dash='dot'), name='적금 시 자산 성장 (단리)'))
         fig_growth.update_layout(
             title = "자산 성장 곡선 (Growth Curve)", 
             template = "plotly_white", 
