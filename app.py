@@ -1831,18 +1831,17 @@ def render_retirement():
             def update_yield_num():
                 st.session_state.yield_sl = st.session_state.yield_num
             
-            c_a, c_b = st.columns(2)
             with c_a:
                 st.markdown("물가상승률(%)")
                 c_a1, c_a2 = st.columns([2, 1])
-                inf = c_a1.slider("물가상승률", min_value=1.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=update_inf_sl)
-                inf = c_a2.number_input("물가상승률 입력", min_value=1.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=update_inf_num)
+                inf = c_a1.slider("물가상승률", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=update_inf_sl)
+                inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=update_inf_num)
                 
             with c_b:
                 st.markdown("투자수익률(%)")
                 c_b1, c_b2 = st.columns([2, 1])
-                yield_r = c_b1.slider("투자수익률", min_value=1.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=update_yield_sl)
-                yield_r = c_b2.number_input("투자수익률 입력", min_value=1.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=update_yield_num)
+                yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=update_yield_sl)
+                yield_r = c_b2.number_input("투자수익률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=update_yield_num)
                 
             st.markdown("---")
             st.markdown("##### 🚀 고도화 옵션")
@@ -2272,13 +2271,13 @@ def render_target_fund():
             
             st.markdown("적금 금리(%)")
             cs1, cs2 = st.columns([2, 1])
-            with cs1: top_sav_rate = st.slider("적금 금리", min_value=1.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=update_tf_sav_rate_sl)
-            with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=1.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=update_tf_sav_rate_num)
+            with cs1: top_sav_rate = st.slider("적금 금리", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=update_tf_sav_rate_sl)
+            with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=update_tf_sav_rate_num)
 
             st.markdown("기대 수익률(%)")
             c3, c4 = st.columns([2, 1])
-            with c3: rate = st.slider("기대 수익률", min_value=1.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=update_tf_rate_sl)
-            with c4: rate = st.number_input("수익률 입력", min_value=1.0, max_value=20.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=update_tf_rate_num)
+            with c3: rate = st.slider("기대 수익률", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=update_tf_rate_sl)
+            with c4: rate = st.number_input("수익률 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=update_tf_rate_num)
             
             st.markdown("---")
             # Removed 세후 수익률 적용
@@ -2380,9 +2379,9 @@ def render_target_fund():
     if is_mc_tf:
         with col_t2:
             cc1, cc2, cc3 = st.columns(3)
-            savings_rate = cc1.number_input("적금 금리(%)", value=2.5, step=0.1, key="tf_sav_rate")
-            fund_rate = cc2.number_input("펀드 기대수익률(%)", value=7.0, step=0.1, key="tf_fund_rate")
-            etf_rate = cc3.number_input("변액ETF 기대수익률(%)", value=10.0, step=0.1, key="tf_etf_rate")
+            savings_rate = cc1.number_input("적금 금리(%)", min_value=0.0, value=2.5, step=0.1, key="tf_sav_rate")
+            fund_rate = cc2.number_input("펀드 기대수익률(%)", min_value=0.0, value=7.0, step=0.1, key="tf_fund_rate")
+            etf_rate = cc3.number_input("변액ETF 기대수익률(%)", min_value=0.0, value=10.0, step=0.1, key="tf_etf_rate")
             
         # === 상품별 파라미터 설정 ===
         # 적금: 이자소득세 15.4%
