@@ -261,6 +261,8 @@ st.markdown("""
         overflow: visible !important;
         text-overflow: clip !important;
         word-break: keep-all !important;
+        font-size: 0.82rem !important;
+        line-height: 1.3 !important;
     }
     
     .step-title { color: #1e3a8a; font-weight: 700; font-size: 0.95rem; margin-bottom: 5px; line-height: 1.4; }
@@ -2342,10 +2344,10 @@ def render_target_fund():
         
         c1, c2 = st.columns(2)
         if calc_type == "목표 필요 자금":
-            c1.metric("투자 시 매월 저축액", f"{f_w(req_monthly)} 원", delta=f"적금(단리) 시 {f_w(sav_req_monthly)}원 필요", delta_color="off")
+            c1.metric("투자 시 매월 저축액", f"{f_w(req_monthly)} 원", delta=f"적금(단리) 시 {f_w(sav_req_monthly)}원\n필요", delta_color="off")
         else:
-            c1.metric("투자 시 예상 자산", f"{f_w(expected_total)} 원", delta=f"적금(단리) 시 {f_w(sav_expected_total)}원 예상", delta_color="off")
-        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 이자 {f_w(sav_total_interest)}원", delta_color="off")
+            c1.metric("투자 시 예상 자산", f"{f_w(expected_total)} 원", delta=f"적금(단리) 시 {f_w(sav_expected_total)}원\n예상", delta_color="off")
+        c2.metric("투자 (복리) 예상 수익", f"{f_w(total_interest)} 원", delta=f"적금(단리) 이자\n{f_w(sav_total_interest)}원", delta_color="off")
         
         # Growth Curve Chart
         growth_months = list(range(months + 1))
