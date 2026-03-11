@@ -1,6 +1,4 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
@@ -65,20 +63,27 @@ def render_inheritance():
         r, p, r_desc = get_tax_rate_5steps(tax_base)
         if is_startup:
             startup_limit = 500_000_000
-            calc_tax = min(tax_base, startup_limit) * 0.10
-            r_desc = "창업자금 과세특례 (10% 단일세율)"
+            if tax_base <= startup_limit:
+                calc_tax = tax_base * 0.10
+                r_desc = "창업자금 과세특례 (10% 단일세율)"
+            else:
+                startup_tax = startup_limit * 0.10
+                excess = tax_base - startup_limit
+                r_ex, p_ex, _ = get_tax_rate_5steps(excess)
+                calc_tax = startup_tax + (excess * r_ex - p_ex)
+                r_desc = f"창업자금 특례 5억(10%) + 초과분({int(r_ex*100)}%)"
         else:
             calc_tax = tax_base * r - p
 
-        # Surcharge
-        surcharge_amt, surcharge_desc = TaxEngine.get_generation_skipping_surcharge(calc_tax, is_gen_skip, is_minor_high)
+        # Surcharge (tax_base 전달하여 20억 초과 자동 검증)
+        surcharge_amt, surcharge_desc = TaxEngine.get_generation_skipping_surcharge(calc_tax, is_gen_skip, is_minor_high, tax_base)
 
         # Credit for previously paid tax (기납부세액공제) - Cannot exceed calculated tax + surcharge
         max_credit = calc_tax + surcharge_amt
         applied_prev_tax = min(prev_tax, max_credit)
 
         tax_after_prepaid = calc_tax + surcharge_amt - applied_prev_tax
-        final_tax = tax_after_prepaid * 0.97 # 신고세액공제 3%
+        final_tax = max(0, tax_after_prepaid * 0.97) # 신고세액공제 3%, 음수 방지
 
         net_gift = curr - debt - final_tax
 
@@ -98,10 +103,14 @@ def render_inheritance():
             </div></div>"""
             st.markdown(_gif_html, unsafe_allow_html=True)
 
-            # Pie Chart
+            # Pie Chart (음수 값 필터링)
+            _pie_names, _pie_vals = [], []
+            if net_gift > 0: _pie_names.append('실 수령액'); _pie_vals.append(net_gift)
+            if final_tax > 0: _pie_names.append('납부 세액'); _pie_vals.append(final_tax)
+            if debt > 0: _pie_names.append('채무 승계액'); _pie_vals.append(debt)
             fig = px.pie(
-                names=['실 수령액', '납부 세액', '채무 승계액'],
-                values=[net_gift, final_tax, debt],
+                names=_pie_names if _pie_vals else ['데이터 없음'],
+                values=_pie_vals if _pie_vals else [1],
                 color_discrete_sequence=['#1e3a8a', '#94a3b8', '#cbd5e1'],
                 hole=0.5
             )
@@ -291,6 +300,8 @@ def render_inheritance():
             funeral = st.session_state.get('inh_f', 10_000_000)
             has_spouse = st.session_state.get('inh_sp', True)
             spouse_ded_val = st.session_state.get('inh_sp_ded', 0) if has_spouse else 0
+            if has_spouse and spouse_ded_val < 500_000_000:
+                spouse_ded_val = 500_000_000  # 배우자 생존 시 최소 5억 공제 보장
             ded_type = st.session_state.get('inh_type', "일괄공제 (5억)")
             num_children = st.session_state.get('inh_children', 2)
             num_minors = st.session_state.get('inh_minors', 0)
@@ -305,6 +316,12 @@ def render_inheritance():
             is_gen_skip_inh = st.session_state.get('inh_skip', False)
 
         # Logic
+        # 배우자공제 법정상속분 한도 적용 (상속세법 제19조)
+        if has_spouse and spouse_ded_val > 0:
+            _num_ch_calc = st.session_state.get('inh_children', 2)
+            _legal_sp_calc = int(estate_val * 1.5 / (1.5 + _num_ch_calc)) if (1.5 + _num_ch_calc) > 0 else estate_val
+            spouse_ded_val = max(500_000_000, min(spouse_ded_val, _legal_sp_calc, 3_000_000_000))
+
         basic_ded = 200_000_000
         if "일괄" in ded_type:
             final_other_ded = 500_000_000
@@ -320,14 +337,21 @@ def render_inheritance():
             elderly_ded = num_elderly_calc * 50_000_000
             disabled_ded = num_disabled_calc * avg_disabled_life_calc * 10_000_000
             final_other_ded = basic_ded + child_ded + minor_ded + elderly_ded + disabled_ded
+            # 기초+인적공제 합계가 일괄공제(5억)보다 작으면 일괄공제 적용 (납세자 유리 원칙)
+            if final_other_ded < 500_000_000:
+                final_other_ded = 500_000_000
 
         fin_ded = 0
         if fin_asset <= 20_000_000: fin_ded = fin_asset
         else: fin_ded = min(200_000_000, max(20_000_000, fin_asset * 0.2))
 
         # Calculation
+        funeral = max(5_000_000, min(funeral, 15_000_000))  # 장례비용 공제: 최소 500만원 보장, 최대 1,500만원
         net_estate = estate_val + prev_gift_inh - debt_inh - funeral - nontax_estate
         total_deduction = final_other_ded + spouse_ded_val + fin_ded + coresidence_ded + business_ded + farming_ded
+        # 공제적용한도액: 상속공제 합계는 (과세가액 - 사전증여 합산액)을 초과할 수 없음
+        deduction_limit = max(0, net_estate - prev_gift_inh)
+        total_deduction = min(total_deduction, deduction_limit)
         tax_base = max(0, net_estate - total_deduction)
 
         r_i, p_i, r_desc = get_tax_rate_5steps(tax_base)
@@ -341,7 +365,7 @@ def render_inheritance():
         applied_prev_tax_inh = min(prev_tax_inh, max_credit_inh)
 
         tax_after_prepaid_inh = calc_tax_i + surcharge_inh - applied_prev_tax_inh
-        final_tax_i = tax_after_prepaid_inh * 0.97 # Declaration Credit
+        final_tax_i = max(0, tax_after_prepaid_inh * 0.97) # Declaration Credit, 음수 방지
 
         with col_result:
             st.subheader("📊 상속세 분석 결과")

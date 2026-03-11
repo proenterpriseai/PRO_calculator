@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
 from station_data import COMPLEX_DB, REGION_DB
-from core import make_sync_callback, get_tax_rate_5steps
+from core import get_capital_gains_tax_rate
 
 def render_real_estate():
     # Fragment 내 세션 상태 방어 초기화 (fragment는 독립 실행되므로 core.init 이전에 호출될 수 있음)
@@ -122,10 +122,16 @@ def render_real_estate():
         tax = price * rate
 
         # Additional Taxes
-        # 지방교육세: 표준세율(1~3%) 취득세의 10%, 중과세율(8~12%) 시에도 표준세율 부분만 10% 적용 (간이 계산)
-        if rate > 0.03:
-            # 중과세율: 표준세율(3%) 기준 교육세 적용
-            _std_tax = price * 0.03
+        # 지방교육세: 표준세율(1~3%) 취득세의 10%, 중과세율 시 표준세율 부분만 10% 적용
+        if rate > 0.03 and "주택" in prop_type:
+            # 주택 중과세율: 해당 가격대의 실제 표준세율 기준 교육세 적용
+            if price <= 600_000_000:
+                _std_rate = 0.01
+            elif price <= 900_000_000:
+                _std_rate = (price * 2 / 300_000_000 - 3) / 100
+            else:
+                _std_rate = 0.03
+            _std_tax = price * _std_rate
             edu_tax = _std_tax * 0.10
         else:
             edu_tax = tax * 0.10
@@ -239,7 +245,7 @@ def render_real_estate():
                 off_p = comma_int_input("주택 공시가격 (총합/원)", st.session_state.hold_p, "hold_p", help="보유하고 있는 모든 주택의 국토교통부 고시 공시가격 합계를 입력하세요. (통상 실거래가의 60~70% 수준)")
                 h_type = st.radio("보유 형태", ["1주택(단독)", "1주택(공동명의)", "다주택"], horizontal=True, key="hold_h")
                 if h_type == "1주택(공동명의)":
-                    st.caption("💡 공동명의: 부부 각각 6억 공제(합산 12억). 세액공제는 지분이 큰 자 기준 적용됩니다.")
+                    st.caption("💡 공동명의: 1세대 1주택 특례 적용 시 12억 공제 + 세액공제. (특례 미적용 시 각 9억, 합산 18억 가능하나 세액공제 없음)")
 
                 with st.container():
                     st.caption("세액공제 요건 (1주택자)")
@@ -259,8 +265,8 @@ def render_real_estate():
             exemption = 1_200_000_000  # 1주택(단독) 및 1주택(공동명의) 모두 12억 공제
 
         j_base = max(0, (off_p - exemption) * 0.6)
-        j_tax_raw, j_rate_desc, jongbu_rural_tax_raw = TaxEngine.get_jongbu_tax(j_base)
-        prop_tax_base, prop_edu_tax, prop_city_tax, prop_tax = TaxEngine.get_property_tax(off_p)
+        j_tax_raw, j_rate_desc, jongbu_rural_tax_raw = TaxEngine.get_jongbu_tax(j_base, is_multi_home=("다주택" in h_type))
+        prop_tax_base, prop_edu_tax, prop_city_tax, prop_tax = TaxEngine.get_property_tax(off_p, is_single_home=("1주택" in h_type))
 
         deduction_rate = 0
         if "1주택" in h_type:
@@ -414,7 +420,7 @@ def render_real_estate():
 
         # 1세대 1주택 비과세 (주택에만 적용, 거주 2년 이상일 때)
         _1h_applicable = _is_housing and is_1h and r_years >= 2
-        if _1h_applicable and sell_p > 1_200_000_000:
+        if _1h_applicable and sell_p > 1_200_000_000 and sell_p > 0:
             taxable_gain = gain * (sell_p - 1_200_000_000) / sell_p
         elif _1h_applicable and sell_p <= 1_200_000_000:
             taxable_gain = 0
@@ -425,8 +431,9 @@ def render_real_estate():
         if asset_type == "분양권(2021년 이후 취득)":
             if h_years < 1:
                 _short_rate, _short_desc = 0.70, "단기보유 중과 70% (분양권 1년 미만)"
-            else:
-                _short_rate, _short_desc = 0.60, "단기보유 중과 60% (분양권 1년 이상)"
+            elif h_years < 2:
+                _short_rate, _short_desc = 0.60, "단기보유 중과 60% (분양권 1~2년 미만)"
+            # 2년 이상: _short_rate = None → 일반 누진세율(6~45%) 적용
         elif asset_type in ["주택", "비사업용 토지"]:
             if h_years < 1:
                 _short_rate, _short_desc = 0.70, "단기보유 중과 70% (1년 미만 보유)"
@@ -457,7 +464,7 @@ def render_real_estate():
                     surcharge_rate = 0.20
                 elif '3주택' in multi_house_surcharge or '4주택' in multi_house_surcharge:
                     surcharge_rate = 0.30
-            r, p, r_desc = get_tax_rate_5steps(yang_base)
+            r, p, r_desc = get_capital_gains_tax_rate(yang_base)
             _extra = surcharge_rate + (0.10 if _nonbusiness_land else 0)
             if _extra > 0:
                 final_tax = max(0, yang_base * (r + _extra) - p)

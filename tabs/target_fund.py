@@ -157,7 +157,7 @@ def render_target_fund():
             if m == 0:
                 sav_balances.append(0)
             else:
-                curr_s = req_monthly * m + req_monthly * sav_r * m * (m + 1) / 24
+                curr_s = sav_req_monthly * m + sav_req_monthly * sav_r * m * (m + 1) / 24
                 sav_balances.append(curr_s)
             curr_g = curr_g * (1 + monthly_rate) + req_monthly
         
@@ -177,8 +177,8 @@ def render_target_fund():
         
     st.divider()
     
-    # ===== 적금 vs 펀드 vs 변액ETF 몬테카를로 비교 분석 =====
-    st.subheader("🎲 적금 vs 펀드 vs 변액ETF 몬테카를로 비교 분석")
+    # ===== 적금 vs 펀드 vs 변액ETF 비교 분석 =====
+    st.subheader("🎲 적금 vs 펀드 vs 변액ETF 비교 분석")
     
     col_t1, col_t2 = st.columns([1, 2.5])
     with col_t1:
@@ -291,130 +291,37 @@ def render_target_fund():
             
             st.markdown(f'<div style="background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1d4ed8 100%);padding:24px;border-radius:16px;color:white;box-shadow:0 10px 25px -5px rgba(30,58,138,0.4);margin-bottom:40px;"><div style="text-align:center;margin-bottom:18px;"><div style="font-size:1.05rem;font-weight:700;letter-spacing:0.5px;">⚡ 기간별 적금 vs 펀드 vs 변액ETF 차이</div><div style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">동일 금액 적립 시, 상품별 누적 자산 비교</div></div><div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">{cards_html}</div><div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);"><div style="font-size:0.78rem;color:#bfdbfe;">💡 기간이 길어질수록 비과세 복리의 격차는 <b style="color:#fbbf24;">기하급수적</b>으로 벌어집니다</div></div></div>', unsafe_allow_html=True)
             
-        # === 2. 몬테카를로 200회 시뮬레이션 상세 여정 ===
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### 🎯 목표 달성 과정 몬테카를로 시뮬레이션 (200회)")
-        
-        # === 메트릭 카드 ===
-        html_block(f"""
-        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px; padding: 20px; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 14px; border: 1px solid #e2e8f0; text-align: center;">
-                <div style="font-size: 1.8rem; margin-bottom: 5px;">🏦</div>
-                <div style="color: #64748b; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">적금 (확정금리)</div>
-                <div style="color: #94a3b8; font-size: 1.6rem; font-weight: 800;">{f_w(savings_final)}원</div>
-                <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 4px;">수익 {f_w(savings_profit)}원</div>
-                <div style="margin-top: 10px; padding: 6px 12px; background: #e2e8f0; border-radius: 20px; display: inline-block; font-size: 0.75rem; color: #64748b;">세후 이자 연 1.37%</div>
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 20px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 14px; border: 1px solid #fbbf24; text-align: center;">
-                <div style="font-size: 1.8rem; margin-bottom: 5px;">📊</div>
-                <div style="color: #92400e; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">펀드 (과세/보수)</div>
-                <div style="color: #b45309; font-size: 1.6rem; font-weight: 800;">{f_w(fund_final)}원</div>
-                <div style="color: #b45309; font-size: 0.8rem; margin-top: 4px;">수익 {f_w(fund_profit)}원</div>
-                <div style="margin-top: 10px; padding: 6px 12px; background: rgba(251,191,36,0.3); border-radius: 20px; display: inline-block; font-size: 0.75rem; color: #92400e;">배당소득세(15.4%)<br>+ 보수(연 1.2%) 차감</div>
-            </div>
-            <div style="flex: 1; min-width: 200px; padding: 20px; background: linear-gradient(135deg, #1e3a8a, #2563eb); border-radius: 14px; border: 2px solid #60a5fa; text-align: center; position: relative; overflow: hidden;">
-                <div style="position: absolute; top: 8px; right: 8px; background: #fbbf24; color: #1e3a8a; font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 10px;">BEST</div>
-                <div style="font-size: 1.8rem; margin-bottom: 5px;">🚀</div>
-                <div style="color: #93c5fd; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px;">변액ETF (비과세)</div>
-                <div style="color: white; font-size: 1.6rem; font-weight: 800;">{f_w(etf_final)}원</div>
-                <div style="color: #93c5fd; font-size: 0.8rem; margin-top: 4px;">수익 {f_w(etf_profit)}원</div>
-                <div style="margin-top: 10px; padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 20px; display: inline-block; font-size: 0.75rem; color: #bfdbfe;">✨ 비과세 + 낮은 변동성</div>
-            </div>
-        </div>
-        """)
-        
-        # === 차이 강조 배너 ===
-        html_block(f"""
-        <div style="background: linear-gradient(135deg, #0f172a, #1e293b); padding: 18px 25px; border-radius: 14px; margin-bottom: 20px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 15px;">
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 0.8rem;">적금 대비 변액ETF 초과 수익</div>
-                <div style="color: #34d399; font-size: 1.4rem; font-weight: 800;">+{f_w(etf_vs_savings)}원</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 0.8rem;">펀드 대비 변액ETF 초과 수익</div>
-                <div style="color: #60a5fa; font-size: 1.4rem; font-weight: 800;">+{f_w(etf_vs_fund)}원</div>
-            </div>
-            <div style="text-align: center;">
-                <div style="color: #94a3b8; font-size: 0.8rem;">비과세/보수 절감 효과</div>
-                <div style="color: #fbbf24; font-size: 1.4rem; font-weight: 800;">+{f_w(etf_final - fund_final)}원</div>
-            </div>
-        </div>
-        """)
-        
-        # === 몬테카를로 3종 비교 차트 ===
-        mc_fig = go.Figure()
-        
-        # 적금 (확정 - 단일 선)
-        mc_fig.add_trace(go.Scatter(
-            x=mc_years, y=savings_balances, name="🏦 적금 (확정)",
-            line=dict(color='#94a3b8', width=3, dash='dot'),
-            hovertemplate='적금: %{y:,.0f}원<extra></extra>'
-        ))
-        
-        # 펀드 신뢰구간
-        mc_fig.add_trace(go.Scatter(x=mc_years, y=fund_p90, mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
-        mc_fig.add_trace(go.Scatter(x=mc_years, y=fund_p10, mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(251, 191, 36, 0.08)', showlegend=False, hoverinfo='skip'))
-        mc_fig.add_trace(go.Scatter(
-            x=mc_years, y=fund_p50, name="📊 펀드 (과세/보수)",
-            line=dict(color='#f59e0b', width=2.5),
-            hovertemplate='펀드: %{y:,.0f}원<extra></extra>'
-        ))
-        
-        # 변액ETF 신뢰구간
-        mc_fig.add_trace(go.Scatter(x=mc_years, y=etf_p90, mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'))
-        mc_fig.add_trace(go.Scatter(x=mc_years, y=etf_p10, mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(37, 99, 235, 0.1)', showlegend=False, hoverinfo='skip'))
-        mc_fig.add_trace(go.Scatter(
-            x=mc_years, y=etf_p50, name="🚀 변액ETF (비과세)",
-            line=dict(color='#2563eb', width=4),
-            hovertemplate='변액ETF: %{y:,.0f}원<extra></extra>'
-        ))
-        
-        # 목표선
-        mc_fig.add_hline(y=target_amt, line_dash="dash", line_color="#ef4444", line_width=1.5,
-                         annotation_text=f"🎯 목표 {f_w(target_amt)}원", annotation_position="top left",
-                         annotation_font=dict(color="#ef4444", size=11))
-        
-        mc_fig.update_layout(
-            title=dict(text="", font=dict(size=16, color='#1e293b')),
-            template="plotly_white",
-            plot_bgcolor='rgba(255,255,255,0)',
-            paper_bgcolor='white',
-            height=420,
-            margin=dict(l=20, r=20, t=20, b=20),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=12)),
-            xaxis=dict(title="경과 기간 (년)", showgrid=True, gridcolor='#f1f5f9'),
-            yaxis=dict(title="누적 자산 (원)", showgrid=True, gridcolor='#f1f5f9'),
-            hovermode="x unified"
-        )
-        st.plotly_chart(mc_fig)
-        
-        st.caption(f"※ 적금: 단리만기 (실효세후수익률 반영) | q펀드: 연 {fund_rate:.2f}% 기대수익(변동성 {fund_vol*100:.0f}%, 세후/펀드보수 반영) | 변액ETF: 연 {etf_rate:.2f}% 기대수익(변동성 {etf_vol*100:.0f}%, 비과세/보험사업비 및 펀드보수 반영)")
-            
 
         
         with st.expander("🏢 금융기관별 상품 비교", expanded=False):
             st.markdown('<div style="text-align:center;"><h4 style="margin-bottom:16px;">금융기관별 목적자금 마련 상품 비교</h4><table style="margin:0 auto;border-collapse:collapse;width:95%;max-width:900px;font-size:0.88rem;"><thead><tr style="background:#1e3a8a;color:white;"><th style="padding:10px 12px;border:1px solid #334155;text-align:center;">항목</th><th style="padding:10px 12px;border:1px solid #334155;text-align:center;">🏦 은행 (적금)</th><th style="padding:10px 12px;border:1px solid #334155;text-align:center;">📊 증권사 (펀드)</th><th style="padding:10px 12px;border:1px solid #334155;text-align:center;">🚀 보험사 (변액ETF)</th></tr></thead><tbody><tr><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">대표 상품</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">정기적금, 자유적금</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">주식형/혼합형 펀드</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">변액ETF저축보험</td></tr><tr style="background:#f8fafc;"><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">수익률</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">확정 3~4%</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">변동 (시장 수익률)</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">변동 (시장 수익률)</td></tr><tr><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">과세</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">이자소득세 15.4%</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">배당소득세 15.4%</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">비과세 (10년 유지 시)</td></tr><tr style="background:#f8fafc;"><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">변동성 관리</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">없음 (확정)</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">직접 관리 필요</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">펀드 무제한 무료 변경</td></tr><tr><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">사망 보장</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">없음</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">없음</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">사망보험금 지급</td></tr><tr style="background:#f8fafc;"><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">최저 보증</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">원금 보장</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">없음</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">최저 사망보험금 보증</td></tr><tr><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">ETF 투자</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">불가</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">가능 (별도 계좌)</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">보험 내 ETF 직접 편입</td></tr><tr style="background:#f8fafc;"><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">장기 복리</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">낮은 확정금리</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">세금이 복리를 깎음</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">비과세 복리 극대화</td></tr><tr><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:600;">중도 인출</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">해지 시 이자 손실</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">자유 (수수료 有)</td><td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">부분 인출 가능</td></tr></tbody></table><div style="margin-top:14px;padding:10px 16px;background:#eff6ff;border-radius:8px;border-left:4px solid #2563eb;text-align:left;font-size:0.85rem;">💡 <b>핵심 포인트</b>: 동일한 수익률이라도 세금이 매년 깎이는 펀드 대비, 비과세 복리로 굴러가는 변액ETF는 시간이 길어질수록 <b>기하급수적으로</b> 차이가 벌어집니다.</div></div>', unsafe_allow_html=True)
     else:
-        st.info("💡 적금·펀드·변액ETF의 수익률 차이를 몬테카를로 시뮬레이션으로 직접 확인해보세요. 비과세의 놀라운 복리 효과를 체감하실 수 있습니다.")
+        st.info("💡 적금·펀드·변액ETF의 수익률 차이를 비교 분석으로 직접 확인해보세요. 비과세의 놀라운 복리 효과를 체감하실 수 있습니다.")
 
     # === 스마트 자산 증식 전략 비교 리포트 ===
     with st.expander("📊 스마트 자산 증식 전략 비교 리포트", expanded=False):
-        # 각 상품별 수익 계산
-        savings_result = 0
-        net_s_rate = 3.5 * (1 - 0.154) / 100
-        for yr in range(period):
-            savings_result = savings_result * (1 + net_s_rate) + req_monthly * 12
-        
-        fund_result_simple = 0
-        net_f_rate = actual_rate * (1 - 0.154) / 100
-        for yr in range(period):
-            fund_result_simple = fund_result_simple * (1 + net_f_rate) + req_monthly * 12
-        
-        etf_result_simple = 0
-        net_e_rate = actual_rate / 100
-        for yr in range(period):
-            etf_result_simple = etf_result_simple * (1 + net_e_rate) + req_monthly * 12
-        
+        # 각 상품별 수익 계산 (월 복리 기준으로 통일)
+        _total_months = period * 12
+
+        # 적금: 단리 + 이자소득세 15.4%
+        _principal = req_monthly * _total_months
+        _pre_tax_interest = req_monthly * (top_sav_rate / 100) * _total_months * (_total_months + 1) / 24
+        savings_result = _principal + _pre_tax_interest * (1 - 0.154)
+
+        # 펀드: 월 복리 (세후)
+        _net_f_monthly = actual_rate * (1 - 0.154) / 100 / 12
+        if _net_f_monthly > 0:
+            fund_result_simple = req_monthly * ((1 + _net_f_monthly)**_total_months - 1) / _net_f_monthly
+        else:
+            fund_result_simple = req_monthly * _total_months
+
+        # ETF: 월 복리 (비과세)
+        _net_e_monthly = actual_rate / 100 / 12
+        if _net_e_monthly > 0:
+            etf_result_simple = req_monthly * ((1 + _net_e_monthly)**_total_months - 1) / _net_e_monthly
+        else:
+            etf_result_simple = req_monthly * _total_months
+
         total_input = req_monthly * 12 * period
         
         html_block(f"""
@@ -429,9 +336,9 @@ def render_target_fund():
             <div class='step-box' style="border-left-color: #94a3b8;">
                 <div class='step-title'>2. 🏦 적금으로 준비하면?</div>
                 <div class='step-content'>
-                    연 3.5% 확정금리 (이자소득세 15.4% 차감) → 세후 연 {3.5*(1-0.154):.2f}%<br>
+                    연 {top_sav_rate}% 확정금리 (이자소득세 15.4% 차감) → 세후 연 {top_sav_rate*(1-0.154):.2f}%<br>
                     {period}년 후 총 자산: <span class='highlight'>{f_w(savings_result)}원</span> (총 원금 {f_w(total_input)}원, 이자 수익 {f_w(savings_result - total_input)}원)<br>
-                    <span style="color: #ef4444; font-weight: 600;">⚠️ 목표 금액 대비 {f_w(target_amt - savings_result)}원 부족 → 실질 인플레이션 반영 시 원금 가치마저 감소</span>
+                    <span style="color: {'#ef4444' if savings_result < target_amt else '#16a34a'}; font-weight: 600;">{'⚠️ 목표 금액 대비 ' + f_w(target_amt - savings_result) + '원 부족 → 실질 인플레이션 반영 시 원금 가치마저 감소' if savings_result < target_amt else '✅ 목표 금액 대비 ' + f_w(savings_result - target_amt) + '원 초과 달성'}</span>
                 </div>
             </div>
             <div class='step-box' style="border-left-color: #f59e0b;">

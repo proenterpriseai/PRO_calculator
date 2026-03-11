@@ -1,10 +1,7 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
-from core import _run_retirement_mc, make_sync_callback
+from core import f_w, f_kr, comma_int_input, TaxEngine, render_ai_doctor, html_block
+from core import _run_retirement_mc_3phase, make_sync_callback
 from core import solve_monthly_rate
 
 def render_retirement():
@@ -128,6 +125,8 @@ def render_retirement():
         st.error(f"❌ 은퇴 나이({retire_age}세)가 기대 수명({yy_life}세) 이상입니다. 기대 수명을 더 높게 설정해주세요.")
         return
     if y_def < 0: y_def = 0
+    if pay_years >= y_s and not st.session_state.presentation_mode:
+        st.warning(f"⚠️ 납입 기간({pay_years}년)이 은퇴까지 남은 기간({y_s}년)과 같거나 초과합니다. 거치 기간 없이 은퇴 즉시 연금 수령이 시작됩니다.")
 
     # Message (Only in Design Mode)
     if not st.session_state.presentation_mode:
@@ -201,17 +200,20 @@ def render_retirement():
         for age_v in years_v:
             wealth_v.append(curr_bal_v)
             if age_v < current_age + pay_years:
-                # 1. Payment Phase
-                gain = curr_bal_v * (actual_yield/100)
-                curr_bal_v = curr_bal_v + gain + monthly_save * 12
+                # 1. Payment Phase (월 복리 + 매월 적립)
+                if monthly_yield > 0:
+                    curr_bal_v = curr_bal_v * (1 + monthly_yield)**12 + monthly_save * ((1 + monthly_yield)**12 - 1) / monthly_yield
+                else:
+                    curr_bal_v = curr_bal_v + monthly_save * 12
             elif age_v < retire_age:
-                # 2. Deferral Phase
-                gain = curr_bal_v * (actual_yield/100)
-                curr_bal_v = curr_bal_v + gain
+                # 2. Deferral Phase (월 복리)
+                curr_bal_v = curr_bal_v * (1 + monthly_yield)**12
             else:
-                # 3. Withdrawal Phase
-                gain = curr_bal_v * (actual_yield/100)
-                curr_bal_v = curr_bal_v + gain - goal_f * 12
+                # 3. Withdrawal Phase (월 복리 - 매월 인출)
+                if monthly_yield > 0:
+                    curr_bal_v = curr_bal_v * (1 + monthly_yield)**12 - goal_f * ((1 + monthly_yield)**12 - 1) / monthly_yield
+                else:
+                    curr_bal_v = curr_bal_v - goal_f * 12
 
         fig = go.Figure()
 
@@ -255,8 +257,8 @@ def render_retirement():
             if not st.session_state.presentation_mode:
                 with st.expander("📉 시나리오 B (보수적) 변수 설정", expanded=True):
                     c_comp1, c_comp2 = st.columns(2)
-                    stress_yield_val = c_comp1.number_input("B 수익률 (%)", value=max(0.0, yield_r - 2.0), step=0.1, key="ret_stress_yield_val")
-                    stress_inf_val = c_comp2.number_input("B 물가 (%)", value=inf + 1.0, step=0.1, key="ret_stress_inf_val")
+                    stress_yield_val = c_comp1.number_input("B 수익률 (%)", value=0.0, step=0.1, key="ret_stress_yield_val", help="보수적 시나리오의 투자수익률을 입력하세요.")
+                    stress_inf_val = c_comp2.number_input("B 물가 (%)", value=4.0, step=0.1, key="ret_stress_inf_val", help="보수적 시나리오의 물가상승률을 입력하세요.")
 
             # Use values from state or defaults
             s_yield = st.session_state.ret_stress_yield_val if 'ret_stress_yield_val' in st.session_state else max(0.0, yield_r - 2.0)
@@ -265,20 +267,26 @@ def render_retirement():
             # Logic Adjustments for Scenario B
             actual_stress_yield = s_yield * 0.846 if is_net_return else s_yield
 
-            # Recalculate curve for stress
+            # Recalculate curve for stress (월 복리)
             stress_wealth = []
             curr_stress = 0
             stress_goal_f = goal_p * (1 + s_inf/100)**y_s
+            stress_monthly_yield = actual_stress_yield / 100 / 12
 
             for age_v in years_v:
                 stress_wealth.append(curr_stress)
-                gain = curr_stress * (actual_stress_yield/100)
                 if age_v < current_age + pay_years:
-                    curr_stress = curr_stress + gain + monthly_save * 12
+                    if stress_monthly_yield > 0:
+                        curr_stress = curr_stress * (1 + stress_monthly_yield)**12 + monthly_save * ((1 + stress_monthly_yield)**12 - 1) / stress_monthly_yield
+                    else:
+                        curr_stress = curr_stress + monthly_save * 12
                 elif age_v < retire_age:
-                    curr_stress = curr_stress + gain  # 거치기간: 복리만
+                    curr_stress = curr_stress * (1 + stress_monthly_yield)**12
                 else:
-                    curr_stress = curr_stress + gain - stress_goal_f * 12
+                    if stress_monthly_yield > 0:
+                        curr_stress = curr_stress * (1 + stress_monthly_yield)**12 - stress_goal_f * ((1 + stress_monthly_yield)**12 - 1) / stress_monthly_yield
+                    else:
+                        curr_stress = curr_stress - stress_goal_f * 12
 
             fig.add_trace(go.Scatter(
                 x=years_v, y=stress_wealth,
@@ -287,44 +295,13 @@ def render_retirement():
             ))
 
             # Brief Summary for Scenario B
-            st.info(f"🚩 시나리오 B 적용 시, 은퇴 시점 필요 자금은 **{f_w(stress_goal_f * ((1 - (1 + (actual_stress_yield/100/12)) ** (-y_d*12)) / (actual_stress_yield/100/12)) if actual_stress_yield > 0 else stress_goal_f * y_d * 12)}원**으로 변동됩니다.")
+            if actual_stress_yield > 0:
+                _stress_lump = stress_goal_f * ((1 - (1 + stress_monthly_yield) ** (-y_d*12)) / stress_monthly_yield)
+            else:
+                _stress_lump = stress_goal_f * y_d * 12
+            st.info(f"🚩 시나리오 B 적용 시, 은퇴 시점 필요 자금은 **{f_w(_stress_lump)}원**으로 변동됩니다.")
 
         st.plotly_chart(fig)
-
-        # Monte Carlo Section
-        if is_monte_carlo:
-            st.divider()
-            st.subheader("🎲 몬테카를로 스트레스 테스트 결과")
-            vol = {1: 0.05, 2: 0.08, 3: 0.12, 4: 0.18, 5: 0.25}.get(risk_level, 0.12)
-
-            p10, p50, p90 = _run_retirement_mc(
-                yy_life - current_age,
-                monthly_save * 12,
-                actual_yield,
-                vol
-            )
-
-            mc_fig = go.Figure()
-            mc_years = list(range(current_age, yy_life + 1))
-
-            mc_fig.add_trace(go.Scatter(x=mc_years, y=p90, fill=None, mode='lines', line_color='rgba(59, 130, 246, 0.1)', showlegend=False))
-            mc_fig.add_trace(go.Scatter(x=mc_years, y=p10, fill='tonexty', mode='lines', line_color='rgba(59, 130, 246, 0.1)', name='신뢰구간 (80%)'))
-            mc_fig.add_trace(go.Scatter(x=mc_years, y=p50, mode='lines', line=dict(color='#3b82f6', width=3), name='중간 시나리오'))
-
-            # Add horizontal line at zero
-            mc_fig.add_hline(y=0, line_dash="dot", line_color="red", annotation_text="자산 고갈 지점")
-
-            mc_fig.update_layout(
-                title="시장 변동성 반영 시 자산 추이",
-                template="plotly_white",
-                plot_bgcolor='rgba(255,255,255,0)',
-                height=350,
-                margin=dict(l=20,r=20,t=40,b=20),
-                xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-                yaxis=dict(showgrid=True, gridcolor='#f1f5f9')
-            )
-            st.plotly_chart(mc_fig)
-            st.caption(f"※ 투자 성향({['안정', '안정추구', '중립', '적극', '공격'][risk_level-1]})에 따른 변동성 {vol*100}%를 적용한 200회 시뮬레이션 결과입니다.")
 
     # --- End of Top Columns ---
 
@@ -376,7 +353,7 @@ def render_retirement():
         st.subheader("🎲 몬테카를로 리스크 분석")
 
         _vol = {1: 0.05, 2: 0.08, 3: 0.12, 4: 0.18, 5: 0.25}.get(risk_level, 0.12)
-        p10, p50, p90 = _run_retirement_mc(y_s + y_d, monthly_save * 12, actual_yield, _vol)
+        p10, p50, p90 = _run_retirement_mc_3phase(pay_years, y_def, y_d, monthly_save * 12, goal_f * 12, actual_yield, _vol)
         mc_years = list(range(current_age, current_age + len(p10)))
 
         _mc_cards = [
@@ -419,9 +396,15 @@ def render_retirement():
     if comparative_mode:
         st.divider()
         st.subheader("⚖️ 플랜 수익률 비교 (A vs B)")
-        yield_b = st.number_input("비교할 수익률(%)", value=actual_yield + 2.0, step=0.1)
+        yield_b = st.number_input("비교할 수익률(%)", value=8.0, step=0.1)
         m_yield_b = yield_b / 100 / 12
-        m_save_b = lump_sum_need * m_yield_b / ((1 + m_yield_b)**n_months_pay - 1) if n_months_pay > 0 and m_yield_b > 0 else 0
+        v_pay_end_b = lump_sum_need / ((1 + m_yield_b) ** n_months_defer) if n_months_defer > 0 and m_yield_b > 0 else lump_sum_need
+        if n_months_pay > 0 and m_yield_b > 0:
+            m_save_b = v_pay_end_b * m_yield_b / ((1 + m_yield_b)**n_months_pay - 1)
+        elif n_months_pay > 0:
+            m_save_b = v_pay_end_b / n_months_pay
+        else:
+            m_save_b = 0
 
         fig_comp = go.Figure(data=[
             go.Bar(

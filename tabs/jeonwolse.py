@@ -1,9 +1,6 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block, make_sync_callback
+from core import f_w, comma_int_input, html_block, make_sync_callback
 
 
 def render_jeonwolse():
@@ -36,22 +33,26 @@ def render_jeonwolse():
             _cr1, _cr2 = st.columns([2, 1])
             _cr1.slider("전환율", 2.0, 12.0, step=0.5, key="jw_rate_sl", label_visibility="collapsed",
                         on_change=make_sync_callback('jw_rate_sl', 'jw_rate_num'),
-                        help="전세보증금을 월세로 (또는 그 반대로) 전환할 때 적용되는 이율입니다. (2025년 법정 상한선: 4.75%)")
+                        help="전세보증금을 월세로 (또는 그 반대로) 전환할 때 적용되는 이율입니다. (법정 상한선: 기준금리+2%, 현재 4.50%)")
             _cr2.number_input("전환율 입력", 2.0, 12.0, step=0.5, key="jw_rate_num", label_visibility="collapsed",
                               on_change=make_sync_callback('jw_rate_num', 'jw_rate_sl'))
             conversion_rate = st.session_state.jw_rate_sl
-            if conversion_rate > 4.75:
+            if 'jw_invest_rate' not in st.session_state: st.session_state.jw_invest_rate = 3.5
+            invest_rate = st.number_input("투자 기대수익률 (%)", min_value=0.0, max_value=20.0, step=0.5, key="jw_invest_rate",
+                help="전세 보증금 또는 여유 자금을 투자할 경우의 연간 기대수익률입니다. 전환율과 비교하여 유불리를 판정합니다.")
+            if conversion_rate > 4.50:
                 _has_jw_input = (st.session_state.get('jw_jeonse', 0) > 0 or
                                  st.session_state.get('jw_deposit', 0) > 0 or
                                  st.session_state.get('jw_wolse', 0) > 0)
                 if _has_jw_input:
-                    st.warning(f"⚠️ 입력한 전환율 **{conversion_rate}%** 는 2025년 법정 상한선 **4.75%** 를 초과합니다. 임대차 계약에 적용 시 법적 분쟁이 발생할 수 있습니다.", icon="⚠️")
+                    st.warning(f"⚠️ 입력한 전환율 **{conversion_rate}%** 는 법정 상한선 **4.50%** 를 초과합니다. 임대차 계약에 적용 시 법적 분쟁이 발생할 수 있습니다.", icon="⚠️")
     else:
         mode = st.session_state.get('jw_mode', "전세 → 월세")
         jeonse = st.session_state.get('jw_jeonse', 300_000_000)
         wolse_deposit = st.session_state.get('jw_deposit', 50_000_000)
         monthly_wolse = st.session_state.get('jw_wolse', 1_000_000)
         conversion_rate = st.session_state.get('jw_rate_sl', 5.0)
+        invest_rate = st.session_state.get('jw_invest_rate', 3.5)
 
     # 계산
     with col_result:
@@ -81,19 +82,24 @@ def render_jeonwolse():
             </div>
             """)
 
-            # 비교 차트
+            # 비교 차트 (투자 기대수익률 기준)
+            freed_capital = max(0, jeonse - wolse_deposit)
+            freed_return = int(freed_capital * invest_rate / 100)
             fig = go.Figure(data=[
-                go.Bar(name='전세 기회비용', x=['연간 비용'], y=[int(jeonse * conversion_rate / 100)], marker_color='#1e3a8a'),
-                go.Bar(name='월세 합계', x=['연간 비용'], y=[annual_wolse], marker_color='#ef4444')
+                go.Bar(name='여유자금 투자수익', x=['연간 비용 비교'], y=[freed_return], marker_color='#1e3a8a'),
+                go.Bar(name='월세 지출', x=['연간 비용 비교'], y=[annual_wolse], marker_color='#ef4444')
             ])
-            fig.update_layout(barmode='group', template='plotly_white', height=300, title="전세 기회비용 vs 월세 비교")
+            fig.update_layout(barmode='group', template='plotly_white', height=300, title=f"월세 전환 시 투자수익(연 {invest_rate}%) vs 월세 비용")
             st.plotly_chart(fig)
 
 
 
         else:
-            # 월세 → 전세
-            jeonse_calc = wolse_deposit + int(monthly_wolse * 12 / (conversion_rate / 100))
+            # 월세 → 전세 (전환율 0 방지)
+            if conversion_rate > 0:
+                jeonse_calc = wolse_deposit + int(monthly_wolse * 12 / (conversion_rate / 100))
+            else:
+                jeonse_calc = wolse_deposit
 
             _jw2_html = f"""<div style='display:flex;flex-wrap:wrap;gap:10px;'>
             <div style='flex:1;min-width:160px;background:white;border-radius:10px;padding:14px 12px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.06);'>
@@ -144,25 +150,27 @@ def render_jeonwolse():
         st.write("") # Spacer
         st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
         if "전세 → 월세" in mode:
-            opp_cost = int(jeonse * conversion_rate / 100)
-            if opp_cost > annual_wolse:
+            # 전세→월세 전환 시: 확보 자금(전세-보증금)의 투자수익 vs 월세 비용
+            freed_capital_v = max(0, jeonse - wolse_deposit)
+            freed_return_v = int(freed_capital_v * invest_rate / 100)
+            if freed_return_v > annual_wolse:
                 verdict_icon = "✅"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
-                verdict_title = "월세가 유리합니다"
-                verdict_desc = f"전세 기회비용({f_w(opp_cost)}원/년)이 월세({f_w(annual_wolse)}원/년)보다 <b>{f_w(opp_cost - annual_wolse)}원 더 비쌉니다.</b><br>전세 보증금을 투자하면 월세보다 높은 수익을 기대할 수 있습니다."
-            elif opp_cost < annual_wolse:
+                verdict_title = "월세 전환이 유리합니다"
+                verdict_desc = f"여유자금 투자수익({f_w(freed_return_v)}원/년, 연 {invest_rate}%)이 월세({f_w(annual_wolse)}원/년)보다 <b>{f_w(freed_return_v - annual_wolse)}원 더 많습니다.</b><br>전세 보증금을 월세 전환 후 투자하면 월세 비용을 상쇄하고도 수익이 남습니다."
+            elif freed_return_v < annual_wolse:
                 verdict_icon = "🏠"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
-                verdict_title = "전세가 유리합니다"
-                verdict_desc = f"월세({f_w(annual_wolse)}원/년)가 전세 기회비용({f_w(opp_cost)}원/년)보다 <b>{f_w(annual_wolse - opp_cost)}원 더 비쌉니다.</b><br>전세를 유지하는 것이 경제적으로 유리합니다."
+                verdict_title = "전세 유지가 유리합니다"
+                verdict_desc = f"월세({f_w(annual_wolse)}원/년)가 여유자금 투자수익({f_w(freed_return_v)}원/년, 연 {invest_rate}%)보다 <b>{f_w(annual_wolse - freed_return_v)}원 더 비쌉니다.</b><br>전세를 유지하는 것이 경제적으로 유리합니다."
             else:
                 verdict_icon = "⚖️"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
                 verdict_title = "비용이 동일합니다"
-                verdict_desc = "전세 기회비용과 월세 부담이 같습니다. 주거 안정성, 자금 유동성 등을 고려하여 선택하세요."
+                verdict_desc = "여유자금 투자수익과 월세 부담이 같습니다. 주거 안정성, 자금 유동성 등을 고려하여 선택하세요."
 
             html_block(f"""
             <div style='padding:20px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; text-align:center; background:{verdict_bg}; margin-top:10px; color:white;'>
@@ -170,32 +178,34 @@ def render_jeonwolse():
                 <div style='font-size:1.3rem; font-weight:800; color:{verdict_color}; margin-bottom:10px;'>{verdict_title}</div>
                 <div style='font-size:0.9rem; color:#cbd5e1; line-height:1.6;'>{verdict_desc}</div>
                 <div style='margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2); font-size:0.8rem; color:#94a3b8;'>
-                    ※ 기회비용 = 전세 보증금 × 전환율({conversion_rate}%). 실제 투자수익률에 따라 달라질 수 있습니다.
+                    ※ 여유자금 = (전세금 - 월세보증금) × 투자수익률({invest_rate}%). 전환율({conversion_rate}%)과 투자수익률이 다를수록 유불리가 달라집니다.
                 </div>
             </div>
             """)
 
         else:
+            # 월세→전세 전환 시: 절약되는 월세 vs 추가 자금의 투자기회비용
             annual_wolse_pay = monthly_wolse * 12
-            opp_cost_jeonse = int(jeonse_calc * conversion_rate / 100)
-            if annual_wolse_pay > opp_cost_jeonse:
+            extra_capital = max(0, jeonse_calc - wolse_deposit)
+            invest_loss = int(extra_capital * invest_rate / 100)
+            if annual_wolse_pay > invest_loss:
                 verdict_icon = "🏠"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
                 verdict_title = "전세 전환이 유리합니다"
-                verdict_desc = f"현재 월세 부담({f_w(annual_wolse_pay)}원/년)이 전세 기회비용({f_w(opp_cost_jeonse)}원/년)보다 <b>{f_w(annual_wolse_pay - opp_cost_jeonse)}원 더 비쌉니다.</b><br>전세 자금이 있다면 전세로 전환하는 것이 유리합니다."
-            elif annual_wolse_pay < opp_cost_jeonse:
+                verdict_desc = f"절약되는 월세({f_w(annual_wolse_pay)}원/년)가 추가자금 투자기회비용({f_w(invest_loss)}원/년, 연 {invest_rate}%)보다 <b>{f_w(annual_wolse_pay - invest_loss)}원 더 큽니다.</b><br>전세 자금이 있다면 전세로 전환하는 것이 유리합니다."
+            elif annual_wolse_pay < invest_loss:
                 verdict_icon = "✅"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
                 verdict_title = "현재 월세가 유리합니다"
-                verdict_desc = f"전세 기회비용({f_w(opp_cost_jeonse)}원/년)이 월세 부담({f_w(annual_wolse_pay)}원/년)보다 <b>{f_w(opp_cost_jeonse - annual_wolse_pay)}원 더 비쌉니다.</b><br>여유 자금을 투자에 활용하는 것이 더 효율적입니다."
+                verdict_desc = f"추가자금 투자기회비용({f_w(invest_loss)}원/년, 연 {invest_rate}%)이 절약되는 월세({f_w(annual_wolse_pay)}원/년)보다 <b>{f_w(invest_loss - annual_wolse_pay)}원 더 큽니다.</b><br>여유 자금을 투자에 활용하는 것이 더 효율적입니다."
             else:
                 verdict_icon = "⚖️"
                 verdict_color = "white"
                 verdict_bg = "linear-gradient(135deg, #1e3a8a, #27398c)"
                 verdict_title = "비용이 동일합니다"
-                verdict_desc = "월세 부담과 전세 기회비용이 같습니다. 주거 안정성, 자금 유동성 등을 고려하여 선택하세요."
+                verdict_desc = "월세 절감액과 투자 기회비용이 같습니다. 주거 안정성, 자금 유동성 등을 고려하여 선택하세요."
 
             html_block(f"""
             <div style='padding:20px; border:1px solid rgba(255,255,255,0.1); border-radius:12px; text-align:center; background:{verdict_bg}; margin-top:10px; color:white;'>
@@ -203,7 +213,7 @@ def render_jeonwolse():
                 <div style='font-size:1.3rem; font-weight:800; color:{verdict_color}; margin-bottom:10px;'>{verdict_title}</div>
                 <div style='font-size:0.9rem; color:#cbd5e1; line-height:1.6;'>{verdict_desc}</div>
                 <div style='margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2); font-size:0.8rem; color:#94a3b8;'>
-                    ※ 기회비용 = 환산 전세금 × 전환율({conversion_rate}%). 실제 투자수익률에 따라 달라질 수 있습니다.
+                    ※ 추가필요자금 = (환산전세금 - 월세보증금) × 투자수익률({invest_rate}%). 전환율({conversion_rate}%)과 투자수익률이 다를수록 유불리가 달라집니다.
                 </div>
             </div>
             """)

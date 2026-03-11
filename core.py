@@ -1,6 +1,5 @@
 import streamlit as st
 import numpy as np
-import textwrap
 from dataclasses import dataclass, fields, field
 
 # ============================================================
@@ -9,6 +8,7 @@ from dataclasses import dataclass, fields, field
 
 def f_w(val):
     """Format number with commas"""
+    if val is None: return "0"
     return f"{int(val):,}"
 
 def html_block(content):
@@ -28,6 +28,16 @@ def make_sync_callback(source_key, target_key):
 def _run_retirement_mc(years, annual_savings, expected_return, volatility):
     """은퇴자금 몬테카를로 시뮬레이션 캐싱 래퍼 (동일 파라미터 재계산 방지)"""
     return TaxEngine.run_monte_carlo(years, 0, annual_savings, expected_return, volatility=volatility)
+
+@st.cache_data(show_spinner=False)
+def _run_retirement_mc_3phase(pay_years, defer_years, withdraw_years,
+                               annual_savings, annual_withdrawal,
+                               expected_return, volatility):
+    """은퇴자금 3단계(납입/거치/인출) 몬테카를로 시뮬레이션 캐싱 래퍼"""
+    return TaxEngine.run_monte_carlo_3phase(
+        pay_years, defer_years, withdraw_years,
+        annual_savings, annual_withdrawal,
+        expected_return, volatility=volatility)
 
 @st.cache_data(show_spinner=False)
 def _run_tf_mc(period, annual_save, req_monthly, tf_add_prem, savings_rate, fund_rate, etf_rate, trials=200):
@@ -138,19 +148,47 @@ def get_tax_rate_5steps(base):
     elif base <= 3_000_000_000: return 0.4, 160_000_000, "40% (30억원 이하)"
     else: return 0.5, 460_000_000, "50% (30억원 초과)"
 
+def get_capital_gains_tax_rate(base):
+    """양도소득세 기본세율 (소득세법 8단계 누진세율, 6%~45%)
+    주의: 상속/증여세(10~50%)와 다른 세율표입니다."""
+    if base <= 0: return 0, 0, "과세표준 없음"
+    brackets = [
+        (14_000_000, 0.06, 0, "6% (1,400만원 이하)"),
+        (50_000_000, 0.15, 1_260_000, "15% (5,000만원 이하)"),
+        (88_000_000, 0.24, 5_760_000, "24% (8,800만원 이하)"),
+        (150_000_000, 0.35, 15_440_000, "35% (1.5억원 이하)"),
+        (300_000_000, 0.38, 19_940_000, "38% (3억원 이하)"),
+        (500_000_000, 0.40, 25_940_000, "40% (5억원 이하)"),
+        (1_000_000_000, 0.42, 35_940_000, "42% (10억원 이하)"),
+        (float('inf'), 0.45, 65_940_000, "45% (10억원 초과)")
+    ]
+    for limit, rate, prog_ded, desc in brackets:
+        if base <= limit:
+            return rate, prog_ded, desc
+    return 0.45, 65_940_000, "45% (10억원 초과)"
+
 def f_kr(val):
     """Converts a number to Korean reading format (e.g., 12억 5,000만원)"""
     if val is None or val == 0: return "0원"
     val = int(val)
+    sign = ""
+    if val < 0:
+        sign = "-"
+        val = abs(val)
     eok = val // 100_000_000
     man = (val % 100_000_000) // 10_000
+    won = val % 10_000
 
     res = ""
     if eok > 0: res += f"{eok}억 "
-    if man > 0: res += f"{man:,.0f}만원"
-    elif eok == 0: res = "0원"
-    else: res += "원"
-    return res.strip()
+    if man > 0: res += f"{man:,.0f}만"
+    if eok == 0 and man == 0:
+        res = f"{val:,}원"
+    elif man > 0 and won > 0:
+        res += f" {won:,}원"
+    else:
+        res += "원"
+    return (sign + res).strip()
 
 def show_kr_label(val, has_help=False):
     """Displays Korean currency label if value > 0, aligned at the same height as the field label.
@@ -435,6 +473,8 @@ class TaxEngine:
 
         if is_1house_1family and residence_years >= 2:
             # Table 2: 보유 연 4% + 거주 연 4%, 각 최대 40% (10년 상한)
+            # 거주기간은 보유기간을 초과할 수 없음
+            residence_years = min(residence_years, holding_years)
             h_rate = min(0.4, holding_years * 0.04)
             r_rate = min(0.4, residence_years * 0.04)
             rate = h_rate + r_rate
@@ -447,7 +487,7 @@ class TaxEngine:
         return rate, desc
 
     @staticmethod
-    def get_generation_skipping_surcharge(tax, is_skipping, is_minor_and_high_val):
+    def get_generation_skipping_surcharge(tax, is_skipping, is_minor_and_high_val, tax_base=0):
         """
         世代省略 (Generation Skipping)
         30% Surcharge, 40% if minor and > 2B KRW
@@ -458,7 +498,8 @@ class TaxEngine:
         surcharge_rate = 0.3
         desc = "세대생략 할증 (30%)"
 
-        if is_minor_and_high_val:
+        # 미성년자가 20억원 초과 증여/상속 시에만 40% 할증 적용
+        if is_minor_and_high_val and tax_base > 2_000_000_000:
             surcharge_rate = 0.4
             desc = "세대생략 할증 (40%, 미성년+20억 초과)"
 
@@ -474,7 +515,7 @@ class TaxEngine:
         for _ in range(trials):
             balances = [initial_capital]
             for _ in range(years):
-                # Using log-normal distribution for returns
+                # Using normal distribution for returns
                 actual_return = np.random.normal(expected_return / 100, volatility)
                 new_bal = balances[-1] * (1 + actual_return) + annual_savings
                 balances.append(max(0, new_bal))
@@ -485,6 +526,39 @@ class TaxEngine:
         p50 = np.percentile(scenarios_np, 50, axis=0)
         p90 = np.percentile(scenarios_np, 90, axis=0)
 
+        return p10, p50, p90
+
+    @staticmethod
+    def run_monte_carlo_3phase(pay_years, defer_years, withdraw_years,
+                                annual_savings, annual_withdrawal,
+                                expected_return, volatility=0.10, trials=200):
+        """3단계(납입/거치/인출) 몬테카를로 시뮬레이션
+        - pay_years: 납입기 (매년 annual_savings 적립)
+        - defer_years: 거치기 (운용만, 납입/인출 없음)
+        - withdraw_years: 인출기 (매년 annual_withdrawal 인출)
+        """
+        total_years = pay_years + defer_years + withdraw_years
+        if total_years <= 0:
+            return np.array([0]), np.array([0]), np.array([0])
+        all_scenarios = []
+        for _ in range(trials):
+            balances = [0]
+            for yr in range(total_years):
+                actual_return = np.random.normal(expected_return / 100, volatility)
+                prev = balances[-1]
+                if yr < pay_years:
+                    new_bal = prev * (1 + actual_return) + annual_savings
+                elif yr < pay_years + defer_years:
+                    new_bal = prev * (1 + actual_return)
+                else:
+                    new_bal = prev * (1 + actual_return) - annual_withdrawal
+                balances.append(max(0, new_bal))
+            all_scenarios.append(balances)
+
+        scenarios_np = np.array(all_scenarios)
+        p10 = np.percentile(scenarios_np, 10, axis=0)
+        p50 = np.percentile(scenarios_np, 50, axis=0)
+        p90 = np.percentile(scenarios_np, 90, axis=0)
         return p10, p50, p90
 
     @staticmethod
@@ -503,48 +577,79 @@ class TaxEngine:
         return rec.get(risk_score, rec[3])
 
     @staticmethod
-    def get_jongbu_tax(base):
+    def get_jongbu_tax(base, is_multi_home=False):
         """종합부동산세 누진세율 계산 (2025 기준)
         Returns: (종부세, 세율_desc, 농어촌특별세)
         농어촌특별세 = 종부세의 20%
+        is_multi_home: True → 3주택 이상 중과세율 적용
         """
         if base <= 0:
             return 0, "과세표준 없음", 0
-        brackets = [
-            (300_000_000, 0.005, 0),
-            (600_000_000, 0.007, 600_000),
-            (1_200_000_000, 0.010, 2_400_000),
-            (2_500_000_000, 0.013, 6_000_000),
-            (5_000_000_000, 0.015, 11_000_000),
-            (9_400_000_000, 0.020, 36_000_000),
-            (float('inf'), 0.027, 101_800_000)
-        ]
+        if is_multi_home:
+            # 3주택 이상 중과세율 (2025 기준)
+            brackets = [
+                (300_000_000, 0.005, 0),
+                (600_000_000, 0.007, 600_000),
+                (1_200_000_000, 0.010, 2_400_000),
+                (2_500_000_000, 0.014, 7_200_000),
+                (5_000_000_000, 0.015, 9_700_000),
+                (9_400_000_000, 0.020, 34_700_000),
+                (float('inf'), 0.027, 100_500_000)
+            ]
+        else:
+            # 일반세율 (2주택 이하)
+            brackets = [
+                (300_000_000, 0.005, 0),
+                (600_000_000, 0.007, 600_000),
+                (1_200_000_000, 0.010, 2_400_000),
+                (2_500_000_000, 0.013, 6_000_000),
+                (5_000_000_000, 0.015, 11_000_000),
+                (9_400_000_000, 0.020, 36_000_000),
+                (float('inf'), 0.027, 101_800_000)
+            ]
         for limit, rate, prog_ded in brackets:
             if base <= limit:
                 tax = max(0, base * rate - prog_ded)
-                return tax, f"{rate*100:.1f}%", tax * 0.20
-        tax = max(0, base * 0.027 - 101_800_000)
-        return tax, "2.7%", tax * 0.20
+                suffix = " (다주택 중과)" if is_multi_home else ""
+                return tax, f"{rate*100:.1f}%{suffix}", tax * 0.20
+        rate = brackets[-1][1]
+        prog_ded = brackets[-1][2]
+        tax = max(0, base * rate - prog_ded)
+        suffix = " (다주택 중과)" if is_multi_home else ""
+        return tax, f"{rate*100:.1f}%{suffix}", tax * 0.20
 
     @staticmethod
-    def get_property_tax(off_price):
-        """재산세 간이 계산 (주택분, 1세대1주택 기준)
+    def get_property_tax(off_price, is_single_home=False):
+        """재산세 간이 계산 (주택분)
         Returns: (base_tax, edu_tax, city_tax, total_tax)
         - base_tax: 재산세 본세
         - edu_tax: 지방교육세 (20%)
         - city_tax: 도시지역분 (0.14%)
         - total_tax: 합계
+        - is_single_home: True면 1세대1주택 특례세율 적용 (공시가 9억 이하)
         """
         # 과세표준 = 공시가격 × 공정시장가액비율(60%)
         tax_base = off_price * 0.6
-        if tax_base <= 60_000_000:
-            base_tax = tax_base * 0.001
-        elif tax_base <= 150_000_000:
-            base_tax = 60_000 + (tax_base - 60_000_000) * 0.0015
-        elif tax_base <= 300_000_000:
-            base_tax = 195_000 + (tax_base - 150_000_000) * 0.0025
+        if is_single_home and off_price <= 900_000_000:
+            # 1세대 1주택 특례세율 (공시가 9억 이하)
+            if tax_base <= 60_000_000:
+                base_tax = tax_base * 0.0005
+            elif tax_base <= 150_000_000:
+                base_tax = 30_000 + (tax_base - 60_000_000) * 0.001
+            elif tax_base <= 300_000_000:
+                base_tax = 120_000 + (tax_base - 150_000_000) * 0.002
+            else:
+                base_tax = 420_000 + (tax_base - 300_000_000) * 0.0035
         else:
-            base_tax = 570_000 + (tax_base - 300_000_000) * 0.004
+            # 일반 세율
+            if tax_base <= 60_000_000:
+                base_tax = tax_base * 0.001
+            elif tax_base <= 150_000_000:
+                base_tax = 60_000 + (tax_base - 60_000_000) * 0.0015
+            elif tax_base <= 300_000_000:
+                base_tax = 195_000 + (tax_base - 150_000_000) * 0.0025
+            else:
+                base_tax = 570_000 + (tax_base - 300_000_000) * 0.004
         base_tax = max(0, base_tax)
         edu_tax = base_tax * 0.2  # 지방교육세 (20%)
         city_tax = tax_base * 0.0014  # 도시지역분 (0.14%)

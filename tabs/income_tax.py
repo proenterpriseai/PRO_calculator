@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
+from core import f_w, comma_int_input, html_block
 
 
 def render_income_tax():
@@ -124,7 +122,22 @@ def render_income_tax():
         sep_total_tax = sep_income_tax + sep_financial_tax + sep_local_tax
         can_separate = True
     else:
-        sep_total_tax = total_tax  # 2천만 초과 시 무조건 종합과세
+        # 금융소득 2천만원 초과: 비교산출세액 방식
+        # 방법A: 전체 종합과세 (이미 계산됨 income_tax)
+        tax_a = income_tax
+        # 방법B: 2천만원 × 14% + (기타소득 + 초과 금융소득) 종합과세
+        other_inc = earned_income + business_income + pension_income + etc_income
+        excess_fin = financial_income - financial_threshold
+        comp_taxable = max(0, other_inc + excess_fin - basic_ded)
+        tax_b_prog, _, _ = calc_income_tax(comp_taxable)
+        tax_b = tax_b_prog + financial_threshold * 0.14
+        # 비교산출세액 = MAX(A, B)
+        income_tax = max(tax_a, tax_b)
+        if tax_b > tax_a:
+            rate_desc = "비교산출세액 적용"
+        local_tax = income_tax * 0.1
+        total_tax = income_tax + local_tax
+        sep_total_tax = total_tax
         can_separate = False
 
     with col_result:

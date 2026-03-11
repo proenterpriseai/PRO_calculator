@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -m py_compile app.py)",
-      "Bash(python3 -c \":*)",
-      "Bash(python -m py_compile tabs/real_estate.py)"
-    ]
-  }
-}

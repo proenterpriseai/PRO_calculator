@@ -104,7 +104,7 @@ def render_dollar_insurance():
                 # Custom Additional Payment Logic
                 is_add_pay = st.toggle("추가납입 활용 (유니버셜 기능)", value=False, key="di_add_toggle")
                 if is_add_pay:
-                    add_premium_usd = st.number_input("월 추가납입 보험료 ($)", value=premium_usd, step=100, format="%d", help="기본 보험료의 100% 이내(최대 200%) 권장. 추가납입 시 사업비가 적어 환급률이 대폭 상승합니다.", key="di_add_prem")
+                    add_premium_usd = st.number_input("월 추가납입 보험료 ($)", value=0, step=100, format="%d", help="기본 보험료의 100% 이내(최대 200%) 권장. 추가납입 시 사업비가 적어 환급률이 대폭 상승합니다.", key="di_add_prem")
                 else:
                     add_premium_usd = 0
                 
@@ -243,7 +243,7 @@ def render_dollar_insurance():
         rate_low = st.session_state.rate_low_val if 'rate_low_val' in st.session_state else 1100.0
         rate_mid = st.session_state.rate_mid_val if 'rate_mid_val' in st.session_state else 1350.0
         rate_high = st.session_state.rate_high_val if 'rate_high_val' in st.session_state else 1550.0
-        commission_rate = 0.004
+        commission_rate = 0.0
 
     # Logic Calculation
     # 1. Curve (납입기간별 환급률)
@@ -279,20 +279,19 @@ def render_dollar_insurance():
     bep_rate = total_krw_paid / usd_val_10 if usd_val_10 > 0 else 0
     
     # Tax Equivalent Calc based on Mid Scenario
-    try:
-        total_profit = krw_ret_mid - total_krw_paid
-        
-        # 평가 기준 시점 = 10년 고정 (환급률 자체가 10년 시점 확정값이므로)
-        # CAGR = (10년 환급금 / 총납입금)^(1/10) - 1
-        avg_years_invested = 10.0
-
-        # 실질 연평균 복리 수익률 (CAGR)
-        cagr = (krw_ret_mid / total_krw_paid) ** (1 / avg_years_invested) - 1
-        
-        # 비과세 역산 (은행 예적금 명목 금리로 환산)
-        tax_equiv_yield_10y = (cagr / (1 - 0.154)) * 100
-    except:
-        tax_equiv_yield_10y = 0
+    tax_equiv_yield_10y = 0
+    if total_krw_paid > 0 and krw_ret_mid > 0:
+        try:
+            # 평가 기준 시점 = 10년 고정 (환급률 자체가 10년 시점 확정값이므로)
+            avg_years_invested = 10.0
+            ratio = krw_ret_mid / total_krw_paid
+            if ratio > 0:
+                # 실질 연평균 복리 수익률 (CAGR)
+                cagr = ratio ** (1 / avg_years_invested) - 1
+                # 비과세 역산 (은행 예적금 명목 금리로 환산)
+                tax_equiv_yield_10y = (cagr / (1 - 0.154)) * 100
+        except Exception:
+            tax_equiv_yield_10y = 0
 
     with col_result:
         st.subheader("📊 10년 시점 분석")
@@ -398,7 +397,7 @@ def render_dollar_insurance():
         val_high_str = f_w(krw_ret_high/10000)
         profit_high_num = (p_high/total_krw_paid*100) if total_krw_paid > 0 else 0
         profit_high_str = f"{profit_high_num:+.1f}% ({f_w(p_high/10000)}만)"
-        color_high = "#ef4444" if p_high < 0 else "#be123c"
+        color_high = "#ef4444" if p_high < 0 else "#16a34a"
 
         # 2. HTML 조립
         html = "<div style='display:flex; gap:12px; margin-bottom:24px; flex-wrap: wrap;'>"

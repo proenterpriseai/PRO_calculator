@@ -470,6 +470,18 @@ with st.sidebar:
 # ============================================================
 # Main Routing
 # ============================================================
+# 메뉴 전환 시 스크롤 맨 위로 이동
+_prev_menu = st.session_state.get('_prev_main_menu', None)
+if _prev_menu != main_menu:
+    st.session_state['_prev_main_menu'] = main_menu
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+        var mainContent = window.parent.document.querySelector('section.main');
+        if (mainContent) { mainContent.scrollTo(0, 0); }
+    </script>
+    """, height=0)
+
 # 6. Main Routing (Lazy Import — 선택된 탭 모듈만 import하여 초기 로딩 최적화)
 if "부동산" in main_menu:
     from tabs.real_estate import render_real_estate
