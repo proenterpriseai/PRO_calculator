@@ -389,6 +389,13 @@ st.markdown("""
             color: #cbd5e1 !important;
         }
     }
+
+    /* Streamlit Cloud "Manage app" 버튼 숨김 */
+    .stDeployButton { display: none !important; }
+    [data-testid="manage-app-button"] { display: none !important; }
+    ._profileContainer_gzau3_53 { display: none !important; }
+    .viewerBadge_container__r5tak { display: none !important; }
+    footer { visibility: hidden !important; }
     </style>
     """, unsafe_allow_html=True)
 
