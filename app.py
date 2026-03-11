@@ -390,12 +390,26 @@ st.markdown("""
         }
     }
 
-    /* Streamlit Cloud "Manage app" 버튼 숨김 */
-    .stDeployButton { display: none !important; }
-    [data-testid="manage-app-button"] { display: none !important; }
-    ._profileContainer_gzau3_53 { display: none !important; }
-    .viewerBadge_container__r5tak { display: none !important; }
-    footer { visibility: hidden !important; }
+    /* Streamlit Cloud "Manage app" 버튼 및 footer 숨김 */
+    .stDeployButton,
+    [data-testid="manage-app-button"],
+    [data-testid="stStatusWidget"],
+    div[class*="stAppDeployButton"],
+    div[class*="StatusWidget"],
+    div[class*="profileContainer"],
+    div[class*="viewerBadge"],
+    .viewerBadge_container__r5tak,
+    .stBottom > div,
+    #stDecoration,
+    section[data-testid="stSidebarUserContent"] ~ div,
+    footer,
+    header[data-testid="stHeader"] button[kind="header"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        position: fixed !important;
+        bottom: -100px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
