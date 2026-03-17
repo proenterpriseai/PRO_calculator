@@ -329,43 +329,37 @@ def render_dollar_insurance():
         </div>
         """)
         
-        # --- [추가 기획 1] 비과세 폭발력 시각화 배너 (은행 비교) ---
-        bank_rate = st.number_input("비교 기준 은행 적금 금리(%)", min_value=0.1, max_value=15.0, value=st.session_state.get('di_bank_rate', 3.5), step=0.1, key="di_bank_rate", help="비교할 시중은행 정기적금 금리를 입력하세요.")
+        # --- [추가 기획 1] 은행 환산 금리 임팩트 배너 ---
         display_yield = max(0, tax_equiv_yield_10y)
-        yield_diff = display_yield - bank_rate
-        
-        # 차트 그리기용 막대 비율 (Max 10~15% 수준으로 스케일링)
-        bar_max = max(10.0, display_yield + 2.0)
-        bank_width = min(100, (bank_rate / bar_max) * 100)
-        ins_width = min(100, (display_yield / bar_max) * 100)
-        
-        # +차이 라벨 처리
-        diff_label = f"+{yield_diff:.2f}% 유리!" if yield_diff > 0 else f"{yield_diff:.2f}%"
         
         html_block(f"""
-<div style="background: linear-gradient(135deg, #1e3a8a, #27398c); padding: 25px 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-top: 15px; margin-bottom: 25px; color: white;">
-    <div style="text-align: center; margin-bottom: 22px;">
-        <p style="color: white; font-size: 0.95rem; margin-top: 8px; margin-bottom: 0;">10년 뒤 동일한 달러(현금)를 만들기 위해, <b>이자소득세 15.4%를 떼는 시중은행 적금에 가입한다면 필요한 연 이율(실질 세전 금리)</b>입니다.</p>
+<div style="background: linear-gradient(135deg, #0f172a, #1e3a8a); padding: 30px 35px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+    <div style="text-align: center; margin-bottom: 28px;">
+        <div style="display: inline-block; background: rgba(255,255,255,0.1); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; color: #93c5fd; font-weight: 600; letter-spacing: 1px; margin-bottom: 12px;">🏦 은행 적금 환산 금리</div>
+        <p style="color: #cbd5e1; font-size: 0.95rem; margin-top: 10px; margin-bottom: 0; line-height: 1.6;">10년 뒤 동일한 달러를 만들기 위해,<br><b style="color: white;">이자소득세 15.4%를 떼는 시중은행 적금에서 받아야 하는 금리</b>입니다.</p>
     </div>
-    <div style="margin-bottom: 22px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 700; align-items: flex-end;">
-            <span style="color: #cbd5e1; font-size: 1.05rem;">일반 시중은행 적금</span>
-            <span style="color: #cbd5e1; font-size: 1.1rem; white-space: nowrap; margin-left: 10px;">연 {bank_rate:.2f}%</span>
-        </div>
-        <div style="width: 100%; background-color: rgba(255,255,255,0.1); border-radius: 20px; height: 32px; overflow: hidden; position: relative;">
-            <div style="width: {bank_width}%; background: #94a3b8; height: 100%; border-radius: 20px;"></div>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <div style="display: inline-block; background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(37,99,235,0.3)); border: 1px solid rgba(59,130,246,0.3); border-radius: 20px; padding: 24px 50px;">
+            <div style="font-size: 3.2rem; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; line-height: 1;">연 {display_yield:.2f}%</div>
+            <div style="color: #93c5fd; font-size: 0.85rem; margin-top: 8px; font-weight: 600;">세전 기준 (비과세 상품 대비)</div>
         </div>
     </div>
-    <div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 800; align-items: flex-end;">
-            <span style="color: white; font-size: 1.25rem;">✨ 메트라이프 달러 종신 금리</span>
-            <span style="color: white; font-size: 1.25rem; white-space: nowrap; margin-left: 10px;">연 {display_yield:.2f}%</span>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <div style="background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 20px; text-align: center; min-width: 140px;">
+            <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px;">달러 종신은 비과세</div>
+            <div style="color: #34d399; font-size: 1rem; font-weight: 800;">세금 0원</div>
         </div>
-        <div style="width: 100%; background-color: rgba(255,255,255,0.15); border-radius: 20px; height: 42px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);">
-            <div style="width: {ins_width}%; background: linear-gradient(90deg, #3b82f6, #1d4ed8); height: 100%; border-radius: 20px; box-shadow: 0 0 15px rgba(39,57,140,0.3); display: flex; align-items: center; justify-content: flex-end; padding-right: 15px; color: white; font-weight: 800; font-size: 1rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">
-                {diff_label}
-            </div>
+        <div style="background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 20px; text-align: center; min-width: 140px;">
+            <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px;">은행 적금은 과세</div>
+            <div style="color: #f87171; font-size: 1rem; font-weight: 800;">이자의 15.4%</div>
         </div>
+        <div style="background: rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 20px; text-align: center; min-width: 140px;">
+            <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 4px;">추가 혜택</div>
+            <div style="color: #60a5fa; font-size: 1rem; font-weight: 800;">종신 보장 포함</div>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <p style="color: #94a3b8; font-size: 0.82rem; margin: 0; line-height: 1.5;">💡 즉, 은행에서 <b style="color: #93c5fd;">세전 연 {display_yield:.2f}%</b> 적금 상품을 찾아야 동일한 결과를 얻을 수 있습니다.<br>여기에 <b style="color: #60a5fa;">종신 사망보장</b>까지 무료로 제공됩니다.</p>
     </div>
 </div>
 """)
