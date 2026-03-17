@@ -354,7 +354,7 @@ def render_dollar_insurance():
     </div>
     <div style="text-align: center; margin-bottom: 20px;">
         <div style="display: inline-block; background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(37,99,235,0.3)); border: 1px solid rgba(59,130,246,0.3); border-radius: 20px; padding: 24px 50px;">
-            <div style="font-size: 3.2rem; font-weight: 900; background: linear-gradient(135deg, #60a5fa, #93c5fd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -1px; line-height: 1;">연 {display_yield:.2f}%</div>
+            <div style="font-size: 3.2rem; font-weight: 900; color: white; letter-spacing: -1px; line-height: 1;">연 {display_yield:.2f}%</div>
             <div style="color: white; font-size: 0.85rem; margin-top: 8px; font-weight: 600;">세전 기준 (비과세 상품 대비)</div>
         </div>
     </div>
