@@ -449,11 +449,11 @@ def render_dollar_insurance():
                 <br>
                 1. <b>총 납입 원화:</b> {f_w(total_krw_paid)}원 (월 ${f_w(total_premium_monthly)} × {months_paid}개월 × 평단 {avg_pay_rate}원)<br>
                 2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.1f}%)<br>
-                3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span> (10년 후 해지 시점 기준 — 중간 환율 변동은 무관)<br>
+                3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span> (10년 시점 기준 — 중간 환율 변동은 무관)<br>
                 4. <b>참고:</b> 메트라이프 백만종 상품은 나이/성별과 무관하게 납입기간에 따른 확정 환급률이 적용됩니다.<br>
                 <br>
-                👉 평균 {avg_pay_rate}원에 매입한 달러가 환급률 {rate_10_pet:.1f}%로 불어나므로, 환율이 약 {((1 - bep_rate/avg_pay_rate) * 100):.0f}% 하락해도 본전입니다.<br>
-                👉 <b>해지하는 그 순간</b> 환율이 {bep_rate:.1f}원 이상이면 원화 기준으로도 원금 이상 회수됩니다.
+                👉 환급률 {rate_10_pet:.1f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
+                👉 현재 환율 대비 약 {((1 - bep_rate/avg_pay_rate) * 100):.0f}%의 환율 하락 여유가 있는 안정적인 구조입니다.
             </div>
             """)
 
