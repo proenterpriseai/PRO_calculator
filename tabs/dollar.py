@@ -278,18 +278,32 @@ def render_dollar_insurance():
     # BEP Rate = Total KRW Paid / USD Value
     bep_rate = total_krw_paid / usd_val_10 if usd_val_10 > 0 else 0
     
-    # Tax Equivalent Calc based on Mid Scenario
+    # 은행 적금 환산 금리 — 적금식 IRR (이분법)
+    # "동일 금액을 매월 은행 적금에 넣었을 때, 세후 동일한 원화를 만들려면 필요한 세전 연 금리"
     tax_equiv_yield_10y = 0
-    if total_krw_paid > 0 and krw_ret_mid > 0:
+    monthly_krw = total_krw_paid / months_paid if months_paid > 0 else 0
+    if total_krw_paid > 0 and krw_ret_mid > total_krw_paid:
         try:
-            # 평가 기준 시점 = 10년 고정 (환급률 자체가 10년 시점 확정값이므로)
-            avg_years_invested = 10.0
-            ratio = krw_ret_mid / total_krw_paid
-            if ratio > 0:
-                # 실질 연평균 복리 수익률 (CAGR)
-                cagr = ratio ** (1 / avg_years_invested) - 1
-                # 비과세 역산 (은행 예적금 명목 금리로 환산)
-                tax_equiv_yield_10y = (cagr / (1 - 0.154)) * 100
+            growth_m = max(0, 120 - months_paid)
+
+            def _bank_net(ann_rate):
+                r = ann_rate / 12
+                if r < 1e-10:
+                    return total_krw_paid
+                fv = monthly_krw * ((1 + r) ** months_paid - 1) / r
+                if growth_m > 0:
+                    fv *= (1 + r) ** growth_m
+                interest = fv - total_krw_paid
+                return fv - interest * 0.154
+
+            lo, hi = 0.0001, 0.50
+            for _ in range(100):
+                mid_r = (lo + hi) / 2
+                if _bank_net(mid_r) < krw_ret_mid:
+                    lo = mid_r
+                else:
+                    hi = mid_r
+            tax_equiv_yield_10y = ((lo + hi) / 2) * 100
         except Exception:
             tax_equiv_yield_10y = 0
 
@@ -319,11 +333,11 @@ def render_dollar_insurance():
                 </div>
             </div>
             <div style="flex: 1; min-width: 140px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center;">
-                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 5px;">세전 환산 수익률</div>
-                <div style="color: #22c55e; font-size: 1.1rem; font-weight: 800;">{tax_equiv_yield_10y:.2f}%</div>
-                <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 8px;">비과세 혜택 적용</div>
+                <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 5px;">10년 원화 가치<br>(보합)</div>
+                <div style="color: #1e3a8a; font-size: 1.1rem; font-weight: 800;">{f_w(krw_ret_mid/10000)}만원</div>
+                <div style="color: {'#22c55e' if krw_ret_mid > total_krw_paid else '#ef4444'}; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px;">{'▲' if krw_ret_mid > total_krw_paid else '▼'} {f_w(abs(krw_ret_mid - total_krw_paid)/10000)}만원 {'이익' if krw_ret_mid > total_krw_paid else '손실'}</div>
                 <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #cbd5e1; font-size:0.75rem; color:#64748b; line-height: 1.4;">
-                    이자소득세(15.4%) 면제 효과를<br>반영한 은행 예금 환산 금리
+                    환급금 ${f_w(usd_val_10)} ×<br>보합 환율 {rate_mid}원 기준
                 </div>
             </div>
         </div>
@@ -336,7 +350,7 @@ def render_dollar_insurance():
 <div style="background: linear-gradient(135deg, #0f172a, #1e3a8a); padding: 30px 35px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
     <div style="text-align: center; margin-bottom: 28px;">
         <div style="display: inline-block; background: rgba(255,255,255,0.1); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; color: #93c5fd; font-weight: 600; letter-spacing: 1px; margin-bottom: 12px;">🏦 은행 적금 환산 금리</div>
-        <p style="color: #cbd5e1; font-size: 0.95rem; margin-top: 10px; margin-bottom: 0; line-height: 1.6;">10년 뒤 동일한 달러를 만들기 위해,<br><b style="color: white;">이자소득세 15.4%를 떼는 시중은행 적금에서 받아야 하는 금리</b>입니다.</p>
+        <p style="color: #cbd5e1; font-size: 0.95rem; margin-top: 10px; margin-bottom: 0; line-height: 1.6;">매월 동일한 금액(월 {f_w(round(monthly_krw))}원)을 시중은행 적금에 넣을 때,<br><b style="color: white;">이자소득세 15.4%를 공제하고도 10년 후 동일한 원화를 만들려면 필요한 세전 금리</b>입니다.</p>
     </div>
     <div style="text-align: center; margin-bottom: 20px;">
         <div style="display: inline-block; background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(37,99,235,0.3)); border: 1px solid rgba(59,130,246,0.3); border-radius: 20px; padding: 24px 50px;">
@@ -359,7 +373,7 @@ def render_dollar_insurance():
         </div>
     </div>
     <div style="text-align: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
-        <p style="color: #94a3b8; font-size: 0.82rem; margin: 0; line-height: 1.5;">💡 즉, 은행에서 <b style="color: #93c5fd;">세전 연 {display_yield:.2f}%</b> 적금 상품을 찾아야 동일한 결과를 얻을 수 있습니다.<br>여기에 <b style="color: #60a5fa;">종신 사망보장</b>까지 무료로 제공됩니다.</p>
+        <p style="color: #94a3b8; font-size: 0.82rem; margin: 0; line-height: 1.5;">💡 매월 {f_w(round(monthly_krw))}원씩 은행 적금에 넣는다면, <b style="color: #93c5fd;">세전 연 {display_yield:.2f}%</b>를 받아야<br>10년 후 세후 동일한 금액({f_w(round(krw_ret_mid/10000))}만원)을 만들 수 있습니다. 여기에 <b style="color: #60a5fa;">종신 사망보장</b>까지 포함됩니다.</p>
     </div>
 </div>
 """)
