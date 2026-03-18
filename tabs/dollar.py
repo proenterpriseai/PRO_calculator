@@ -77,7 +77,7 @@ def render_dollar_insurance():
                 rates.append(last)
         
         # 납입기간별 확정 환급률 그대로 반환 (나이/성별 보정 없음)
-        return [round(r, 1) for r in rates[:20]]
+        return [round(r, 2) for r in rates[:20]]
 
     # 1. Inputs
     if st.session_state.presentation_mode:
