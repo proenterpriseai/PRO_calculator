@@ -326,7 +326,7 @@ def render_dollar_insurance():
             </div>
             <div style="flex: 1; min-width: 140px; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; text-align: center;">
                 <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 5px;">10년 시점 환급률<br>($)</div>
-                <div style="color: #1e3a8a; font-size: 1.1rem; font-weight: 800;">{rate_10_pet:.1f}%</div>
+                <div style="color: #1e3a8a; font-size: 1.1rem; font-weight: 800;">{rate_10_pet:.2f}%</div>
                 <div style="color: #94a3b8; font-size: 0.75rem; margin-bottom: 8px;">USD {f_w(usd_val_10)}</div>
                 <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #cbd5e1; font-size:0.75rem; color:#64748b; line-height: 1.4;">
                     총 납입 달러 원금 대비<br>10년 시점 확정 환급금 비율
@@ -448,11 +448,11 @@ def render_dollar_insurance():
                 <b>🧮 산출 공식:</b> 총 납입 원화 ÷ 10년 시점 달러 해지환급금<br>
                 <br>
                 1. <b>총 납입 원화:</b> {f_w(total_krw_paid)}원 (월 ${f_w(total_premium_monthly)} × {months_paid}개월 × 평단 {avg_pay_rate}원)<br>
-                2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.1f}%)<br>
+                2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.2f}%)<br>
                 3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span> (10년 시점 기준 — 중간 환율 변동은 무관)<br>
                 4. <b>참고:</b> 메트라이프 백만종 상품은 나이/성별과 무관하게 납입기간에 따른 확정 환급률이 적용됩니다.<br>
                 <br>
-                👉 환급률 {rate_10_pet:.1f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
+                👉 환급률 {rate_10_pet:.2f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
                 👉 현재 환율 대비 약 {((1 - bep_rate/current_rate) * 100):.0f}%까지 하락해도 손실이 없어, <b>지금이 시작하기 좋은 환율 구간</b>입니다.
             </div>
             """)
