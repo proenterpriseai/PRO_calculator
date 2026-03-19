@@ -109,11 +109,11 @@ def render_dollar_insurance():
                     add_premium_usd = 0
                 
                 total_premium_monthly = premium_usd + add_premium_usd
-                
-                 # Exchange Rate Specs
-                card_header("💱 환율 시나리오")
-                with st.container(border=True):
-                
+
+            # Exchange Rate Specs
+            card_header("💱 환율 시나리오")
+            with st.container(border=True):
+
                 # Real-time Fetch Logic (Robust Requests)
                 r_c1, r_c2 = st.columns([2.5, 1])
                 with r_c1:

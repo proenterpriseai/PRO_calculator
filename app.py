@@ -79,6 +79,10 @@ st.markdown("""
         justify-content: flex-start !important;
         text-align: left;
     }
+    /* 사이드바 카테고리 hover 시 흰색 배경 제거 */
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background-color: transparent !important;
+    }
     
     /* Button Centering */
     [data-testid="stSidebar"] .stButton button {
@@ -449,70 +453,13 @@ st.markdown("""
         border-left-color: #1e3a8a !important;
     }
     
-    /* === Input Widget Polish === */
-    
-    /* Text & Number Inputs: Focus glow */
-    .stTextInput input, .stNumberInput input {
-        border-radius: 8px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        background: #fafbfc !important;
-        font-size: 0.95rem !important;
-    }
-    .stTextInput input:focus, .stNumberInput input:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
-        background: white !important;
-        outline: none !important;
-    }
-    
-    /* Selectbox: Modern dropdown */
-    .stSelectbox > div > div {
-        border-radius: 8px !important;
-        border: 1.5px solid #e2e8f0 !important;
-        transition: border-color 0.2s ease !important;
-        background: #fafbfc !important;
-    }
-    .stSelectbox > div > div:hover {
-        border-color: #93c5fd !important;
-    }
-    
-    /* Slider: Theme-matched colors */
-    .stSlider [data-testid="stThumbValue"] {
-        color: #1e3a8a !important;
-        font-weight: 700 !important;
-    }
-    .stSlider > div > div > div[role="slider"] {
-        background-color: #1e3a8a !important;
-        border: 2px solid white !important;
-        box-shadow: 0 1px 4px rgba(30,58,138,0.3) !important;
-    }
-    .stSlider [data-baseweb="slider"] > div:first-child {
-        background: linear-gradient(90deg, #3b82f6, #1e3a8a) !important;
-    }
-    .stSlider [data-baseweb="slider"] > div:nth-child(2) {
-        background: #e2e8f0 !important;
-    }
-    
-    /* Checkbox & Toggle: Theme alignment */
-    .stCheckbox label span[data-testid="stCheckbox"] {
-        border-color: #93c5fd !important;
-    }
-    
+    /* === Input Widget Polish (최소한) === */
+
     /* Labels: Better typography */
     label[data-testid="stWidgetLabel"] p {
         font-weight: 600 !important;
         color: #334155 !important;
         font-size: 0.88rem !important;
-    }
-    
-    /* Radio buttons: cleaner look */
-    .stRadio [role="radiogroup"] label {
-        border-radius: 8px !important;
-        transition: background-color 0.15s ease !important;
-    }
-    .stRadio [role="radiogroup"] label:hover {
-        background-color: #f1f5f9 !important;
     }
     
     </style>
