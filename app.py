@@ -530,6 +530,51 @@ with st.sidebar:
     st.markdown("---")
     st.session_state.presentation_mode = st.toggle("🖥️ 프레젠테이션 모드", value=st.session_state.get("presentation_mode", False), help="고객 상담 시 입력창을 숨기고 결과 중심으로 화면을 구성합니다.")
 
+    # ── 실시간 경제 지표 위젯 ──
+    st.markdown("---")
+    with st.expander("📈 주요 경제 지표", expanded=False):
+        try:
+            import requests
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            indicators = []
+            # 1. USD/KRW 환율
+            try:
+                r = requests.get("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=exchange&reutersCode=FX_USDKRW", headers=headers, timeout=3)
+                data = r.json()
+                if 'result' in data and 'closePrice' in data['result']:
+                    rate = data['result']['closePrice']
+                    change = data['result'].get('compareToPreviousClosePrice', '')
+                    indicators.append(("🇺🇸 USD/KRW", rate, change))
+            except Exception:
+                indicators.append(("🇺🇸 USD/KRW", "-", ""))
+            # 2. KOSPI
+            try:
+                r = requests.get("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=market&reutersCode=KS11", headers=headers, timeout=3)
+                data = r.json()
+                if 'result' in data and 'closePrice' in data['result']:
+                    indicators.append(("📊 KOSPI", data['result']['closePrice'], data['result'].get('compareToPreviousClosePrice', '')))
+            except Exception:
+                indicators.append(("📊 KOSPI", "-", ""))
+            # 3. 기준금리 (고정값 — 한국은행 변경 시 업데이트)
+            indicators.append(("🏦 기준금리", "2.75%", ""))
+
+            for name, val, chg in indicators:
+                chg_str = ""
+                if chg:
+                    try:
+                        chg_f = float(str(chg).replace(',', ''))
+                        color = "#dc2626" if chg_f < 0 else "#16a34a"
+                        arrow = "▼" if chg_f < 0 else "▲"
+                        chg_str = f"<span style='color:{color};font-size:10px;'>{arrow}{abs(chg_f):,.2f}</span>"
+                    except Exception:
+                        pass
+                st.markdown(f"<div style='display:flex;justify-content:space-between;padding:4px 0;font-size:13px;'>"
+                           f"<span style='color:#94a3b8;'>{name}</span>"
+                           f"<span style='font-weight:700;color:#fff;'>{val} {chg_str}</span>"
+                           f"</div>", unsafe_allow_html=True)
+        except Exception:
+            st.caption("경제 지표를 불러올 수 없습니다.")
+
     st.markdown("---")
     st.markdown("""
         <div style='font-size:0.72rem; color:#94a3b8; line-height:1.5;'>
