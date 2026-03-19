@@ -115,7 +115,7 @@ def render_dollar_insurance():
             with st.container(border=True):
 
                 # Real-time Fetch Logic (Robust Requests)
-                r_c1, r_c2 = st.columns([2.5, 1])
+                r_c1, r_c2 = st.columns([2, 1.2])
                 with r_c1:
                     # Use session state for rate to update it via button
                     if 'curr_rate_val' not in st.session_state:

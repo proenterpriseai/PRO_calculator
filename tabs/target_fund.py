@@ -26,12 +26,12 @@ def render_target_fund():
 
             card_header("🎯 목표 설정")
             with st.container(border=True):
-                calc_type = st.radio("계산 방식 선택", ["목표 필요 자금", "매월 잉여 금액"], key="tf_calc_type", horizontal=True)
+                calc_type = st.radio("계산 방식 선택", ["목표 필요 자금", "매월 저축(투자) 금액"], key="tf_calc_type", horizontal=True)
                 if calc_type == "목표 필요 자금":
                     target_amt = comma_int_input("목표 금액(원)", st.session_state.tf_b, "tf_b")
                     input_monthly = st.session_state.get('tf_monthly_input', 0)
                 else:
-                    input_monthly = comma_int_input("매월 잉여 금액(원)", st.session_state.get('tf_monthly_input', 1000000), "tf_monthly_input")
+                    input_monthly = comma_int_input("매월 저축(투자) 금액(원)", st.session_state.get('tf_monthly_input', 1000000), "tf_monthly_input")
                     target_amt = st.session_state.get('tf_b', 0)
     else:
         client_name = st.session_state.get('tf_name', "")
