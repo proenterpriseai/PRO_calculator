@@ -73,7 +73,6 @@ def render_target_fund():
             # Removed 세후 수익률 적용
     else:
         # Read from state
-        # Read from state
         period = st.session_state.get('tf_period_sl', 5)
         top_sav_rate = st.session_state.get('tf_sav_rate_sl', 2.5)
         rate = st.session_state.get('tf_rate_sl', 5.0)
@@ -224,12 +223,13 @@ def render_target_fund():
             is_mc_tf = False
 
         # 캐싱된 함수 호출 — 동일 파라미터면 재계산 없이 즉시 반환
-        (savings_long, fund_long, etf_long, savings_balances,
-         fund_p10, fund_p50, fund_p90,
-         etf_p10, etf_p50, etf_p90) = _run_tf_mc(
-            period, annual_save, req_monthly, tf_add_prem,
-            savings_rate, fund_rate, etf_rate
-        )
+        with st.spinner("🔄 시뮬레이션 분석 중..."):
+            (savings_long, fund_long, etf_long, savings_balances,
+             fund_p10, fund_p50, fund_p90,
+             etf_p10, etf_p50, etf_p90) = _run_tf_mc(
+                period, annual_save, req_monthly, tf_add_prem,
+                savings_rate, fund_rate, etf_rate
+            )
 
         # === 3종 비교 메트릭 ===
         savings_final = savings_balances[-1]

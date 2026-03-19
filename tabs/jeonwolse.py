@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block, make_sync_callback, render_title_with_reset, card_header
+from core import f_w, comma_int_input, html_block, make_sync_callback, render_title_with_reset, card_header, JeonwolseState
 
 
 def render_jeonwolse():
     """전월세 전환율 계산기"""
-    render_title_with_reset("🏠 전월세 전환율 계산기", ["jw_"], "reset_jeonwolse")
+    render_title_with_reset("🏠 전월세 전환율 계산기", ["jw_"], "reset_jeonwolse", default_states=[JeonwolseState()])
     st.markdown("전세와 월세를 **전환율 기반**으로 상호 변환하고, 유불리를 분석합니다.")
 
     if st.session_state.presentation_mode:

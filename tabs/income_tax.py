@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header
+from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header, IncomeTaxState
 
 
 def render_income_tax():
     """종합소득세 시뮬레이터"""
-    render_title_with_reset("💼 종합소득세 시뮬레이터", ["it_"], "reset_income_tax")
+    render_title_with_reset("💼 종합소득세 시뮬레이터", ["it_"], "reset_income_tax", default_states=[IncomeTaxState()])
     st.markdown("다양한 소득원을 입력하면 **종합과세 vs 분리과세**를 비교합니다.")
 
     if st.session_state.presentation_mode:

@@ -355,7 +355,8 @@ def render_retirement():
         st.subheader("🎲 몬테카를로 리스크 분석")
 
         _vol = {1: 0.05, 2: 0.08, 3: 0.12, 4: 0.18, 5: 0.25}.get(risk_level, 0.12)
-        p10, p50, p90 = _run_retirement_mc_3phase(pay_years, y_def, y_d, monthly_save * 12, goal_f * 12, actual_yield, _vol)
+        with st.spinner("🔄 1,000회 시뮬레이션 분석 중..."):
+            p10, p50, p90 = _run_retirement_mc_3phase(pay_years, y_def, y_d, monthly_save * 12, goal_f * 12, actual_yield, _vol)
         mc_years = list(range(current_age, current_age + len(p10)))
 
         _mc_cards = [

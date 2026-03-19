@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header
+from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header, LoanState
 
 
 def render_loan_planner():
     """대출 상환 설계"""
-    render_title_with_reset("🏦 대출 상환 설계", ["loan_"], "reset_loan")
+    render_title_with_reset("🏦 대출 상환 설계", ["loan_"], "reset_loan", default_states=[LoanState()])
     st.markdown("원리금균등, 원금균등, 만기일시상환 3가지 상환 방식을 **한눈에 비교**합니다.")
 
     if st.session_state.presentation_mode:

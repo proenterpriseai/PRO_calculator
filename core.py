@@ -330,6 +330,28 @@ class DollarInsuranceState:
     rate_high_val: float = 1550.0
 
 @dataclass
+class IncomeTaxState:
+    it_salary: int = 0
+    it_interest: int = 0
+    it_dividend: int = 0
+    it_biz: int = 0
+    it_pension: int = 0
+    it_other: int = 0
+    it_deduction: int = 0
+
+@dataclass
+class JeonwolseState:
+    jw_jeonse: int = 0
+    jw_deposit: int = 0
+    jw_wolse: int = 0
+
+@dataclass
+class LoanState:
+    loan_amt: int = 0
+    loan_rate: float = 4.0
+    loan_years: int = 30
+
+@dataclass
 class AppConfig:
     """통합 세션 상태 관리 모델 (도메인별 분리)"""
     real_estate: RealEstateState = field(default_factory=RealEstateState)
@@ -337,6 +359,9 @@ class AppConfig:
     retirement: RetirementState = field(default_factory=RetirementState)
     target_fund: TargetFundState = field(default_factory=TargetFundState)
     dollar_insurance: DollarInsuranceState = field(default_factory=DollarInsuranceState)
+    income_tax: IncomeTaxState = field(default_factory=IncomeTaxState)
+    jeonwolse: JeonwolseState = field(default_factory=JeonwolseState)
+    loan: LoanState = field(default_factory=LoanState)
     presentation_mode: bool = False
 
 def init_session_state():
