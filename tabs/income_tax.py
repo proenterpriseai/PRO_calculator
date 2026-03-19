@@ -226,3 +226,4 @@ def render_income_tax():
                 "누진공제": ["0", "126만", "576만", "1,544만", "1,994만", "2,594만", "3,594만", "6,594만"]
             })
             st.dataframe(rate_data, hide_index=True)
+

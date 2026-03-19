@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, InheritanceState, card_header
+from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, html_block, render_title_with_reset, InheritanceState, card_header
 from core import get_tax_rate_5steps
 
 def render_inheritance():
@@ -196,7 +196,6 @@ def render_inheritance():
                 st.info("💡 **분납**: 납부세액 1천만원 초과 시 **2개월 이내 분납** 가능합니다. 신고 시 분납을 선택하면 별도 신청 없이 적용됩니다.")
 
         # AI Doctor Call
-        render_ai_doctor("증여세", {'tax': final_tax, 'net': net_gift})
 
     with tab2:
         if st.session_state.presentation_mode:
@@ -489,7 +488,6 @@ def render_inheritance():
         st.session_state['result_inh_estate'] = estate_val
 
         # AI Doctor Call
-        render_ai_doctor("상속세", {'tax': final_tax_i, 'base': tax_base})
 
     # === 종신보험을 활용한 상속세 재원 마련 및 절세 전략 ===
     st.markdown("---")
@@ -562,3 +560,4 @@ def render_inheritance():
         ])
         fig_ins.update_layout(title="계약 구조별 상속세액 비교", template="plotly_white", height=300, margin=dict(t=40, b=20, l=20, r=20))
         st.plotly_chart(fig_ins)
+

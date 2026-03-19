@@ -39,7 +39,7 @@ st.markdown("""
     [data-testid="stSidebar"] .stRadio label p {
         color: white !important;
         font-weight: 500;
-        font-size: 1.2rem !important; /* Increased font size */
+        font-size: 1.0rem !important;
     }
     [data-testid="stSidebar"] [data-testid="stAlert"] {
         background-color: rgba(255,255,255,0.05) !important;
@@ -67,21 +67,46 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Radio Button Left-Align (Options Only) */
+    /* Radio Button: full width matching header */
+    [data-testid="stSidebar"] .stRadio,
+    [data-testid="stSidebar"] .stRadio:has([role="radiogroup"]) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    [data-testid="stSidebar"] .stElementContainer:has(.stRadio) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
     [data-testid="stSidebar"] [role="radiogroup"] {
-        width: 100%;
+        width: 100% !important;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
     }
     [data-testid="stSidebar"] .stRadio label {
-        width: 100%;
+        width: 100% !important;
         justify-content: flex-start !important;
         text-align: left;
+        box-sizing: border-box !important;
     }
-    /* 사이드바 카테고리 hover 시 흰색 배경 제거 */
+    /* 사이드바 카테고리 카드 스타일 */
+    [data-testid="stSidebar"] .stRadio label {
+        background: rgba(255,255,255,0.06) !important;
+        border-radius: 10px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 3px !important;
+        border-left: 3px solid transparent !important;
+        transition: all 0.2s ease !important;
+    }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background-color: transparent !important;
+        background: rgba(255,255,255,0.12) !important;
+        border-left-color: #60a5fa !important;
+        transform: translateX(2px);
+    }
+    [data-testid="stSidebar"] .stRadio label[data-checked="true"],
+    [data-testid="stSidebar"] .stRadio label:has(input:checked) {
+        background: rgba(96,165,250,0.2) !important;
+        border-left-color: #3b82f6 !important;
     }
     
     /* Button Centering */
@@ -477,103 +502,44 @@ init_session_state()  # 매 rerun마다 실행 (모듈 캐싱과 무관하게)
 # 4. Sidebar Profile
 with st.sidebar:
     st.markdown("""
-        <div style='padding:20px; background:#27398c; border-radius:12px; border:1px solid white; margin-bottom:20px; margin-top:-60px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);'>
-            <h3 style='color:white; margin:0; font-size:1.3rem; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px; margin-bottom:10px;'>🧮 PRO Calculator</h3>
-            <p style='font-size:1.0rem; color:#e2e8f0; margin:0;'><b style='color:white; font-size:1.1rem;'>AI 실시간 시뮬레이션</b></p>
-            <p style='font-size:0.9rem; color:#cbd5e1; margin-top:5px;'>프리미엄 자산관리 솔루션</p>
+        <div style='padding:10px 14px; background:#27398c; border-radius:8px; border:1px solid rgba(255,255,255,0.3); margin-bottom:22px; margin-top:-60px;'>
+            <h3 style='color:white; margin:0; font-size:1.1rem; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:6px; margin-bottom:6px;'>🧮 PRO Calculator</h3>
+            <p style='font-size:0.9rem; color:#e2e8f0; margin:0;'><b style='color:white; font-size:0.95rem;'>AI 실시간 시뮬레이션</b></p>
+            <p style='font-size:0.78rem; color:#cbd5e1; margin-top:3px;'>프리미엄 자산관리 솔루션</p>
         </div>
     """, unsafe_allow_html=True)
     
+    _MENU_ICONS = {
+        "부동산 통합": "🏠", "상속 및 증여세": "🎁", "은퇴자금 설계": "🏖️",
+        "목적자금 설계": "🎯", "달러 설계": "💵", "전월세 전환 설계": "🏘️",
+        "대출 상환 설계": "🏦", "종합소득세 계산": "📊",
+    }
+    _menu_items = list(_MENU_ICONS.keys())
+
+    st.markdown("""
+        <div style='background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:10px; padding:9px 16px; margin-bottom:10px; box-shadow: 0 4px 12px rgba(245,158,11,0.3); position:relative; overflow:hidden;'>
+            <div style='position:absolute; top:-8px; right:-8px; width:40px; height:40px; background:rgba(255,255,255,0.15); border-radius:50%;'></div>
+            <span style='color:#fff; font-size:0.88rem; font-weight:800; letter-spacing:0.5px; text-shadow:0 1px 2px rgba(0,0,0,0.2);'>⚡ 금융 솔루션 카테고리</span>
+        </div>
+    """, unsafe_allow_html=True)
     st.radio(
-        "금융 솔루션 카테고리", 
-        ["부동산 통합", "상속 및 증여세", "은퇴자금 설계", "목적자금 설계", "달러 설계", "전월세 전환 설계", "대출 상환 설계", "종합소득세 계산"],
-        key="main_menu"
+        "금융 솔루션 카테고리",
+        _menu_items,
+        format_func=lambda x: f"{_MENU_ICONS.get(x, '')}  {x}",
+        key="main_menu",
+        label_visibility="collapsed"
     )
 
-    st.markdown("<div style='height: 12px'></div>", unsafe_allow_html=True)
-    c_reset, c_sync = st.columns(2)
-    with c_reset:
-        if st.button("🔄 초기화", help="모든 입력값을 초기화합니다."):
-            st.session_state.reset_confirm_mode = True
-            
-    with c_sync:
-        if st.button("📋 샘플", help="샘플 데이터를 불러옵니다 (데모용)."):
-            st.session_state.hold_p = 2_100_000_000
-            st.session_state.yang_s = 2_100_000_000
-            st.session_state.acq_p = 2_100_000_000
-            st.session_state.yang_b = 1_800_000_000
-            st.toast("📋 샘플 데이터가 적용되었습니다.", icon="✅")
-            st.rerun()
+    main_menu = st.session_state.get("main_menu", "부동산 통합")
 
-    if st.session_state.get('reset_confirm_mode', False):
-        st.warning("⚠️ 모든 데이터가 삭제됩니다.", icon="⚠️")
-        rc1, rc2 = st.columns(2)
-        if rc1.button("✅ 실행", key="btn_confirm_rst"):
-            _ui_preserve = {k: st.session_state[k] for k in ['presentation_mode', 'main_menu'] if k in st.session_state}
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            for k, v in _ui_preserve.items():
-                st.session_state[k] = v
-            st.rerun()
-        if rc2.button("❌ 취소", key="btn_cancel_rst"):
-            st.session_state.reset_confirm_mode = False
-            st.rerun()
-
-    main_menu = st.session_state.get("main_menu", "부동산 통합") # Get selected value with default
-    
     # ---------------------------------------------------------
-    # Bottom Utility Section (Pushed down)
-    st.markdown("<div style='height: 40px'></div>", unsafe_allow_html=True)
-    
+    # Bottom Utility Section
+    st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
+
     st.info("💡 **Tip**: 각 시뮬레이터는 최신 세법 및 금융 공학 모델을 기반으로 정밀하게 설계되었습니다.")
-    
+
     st.markdown("---")
     st.session_state.presentation_mode = st.toggle("🖥️ 프레젠테이션 모드", value=st.session_state.get("presentation_mode", False), help="고객 상담 시 입력창을 숨기고 결과 중심으로 화면을 구성합니다.")
-
-    # ── 실시간 경제 지표 위젯 ──
-    st.markdown("---")
-    with st.expander("📈 주요 경제 지표", expanded=False):
-        try:
-            import requests
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            indicators = []
-            # 1. USD/KRW 환율
-            try:
-                r = requests.get("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=exchange&reutersCode=FX_USDKRW", headers=headers, timeout=3)
-                data = r.json()
-                if 'result' in data and 'closePrice' in data['result']:
-                    rate = data['result']['closePrice']
-                    change = data['result'].get('compareToPreviousClosePrice', '')
-                    indicators.append(("🇺🇸 USD/KRW", rate, change))
-            except Exception:
-                indicators.append(("🇺🇸 USD/KRW", "-", ""))
-            # 2. KOSPI
-            try:
-                r = requests.get("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=market&reutersCode=KS11", headers=headers, timeout=3)
-                data = r.json()
-                if 'result' in data and 'closePrice' in data['result']:
-                    indicators.append(("📊 KOSPI", data['result']['closePrice'], data['result'].get('compareToPreviousClosePrice', '')))
-            except Exception:
-                indicators.append(("📊 KOSPI", "-", ""))
-            # 3. 기준금리 (고정값 — 한국은행 변경 시 업데이트)
-            indicators.append(("🏦 기준금리", "2.75%", ""))
-
-            for name, val, chg in indicators:
-                chg_str = ""
-                if chg:
-                    try:
-                        chg_f = float(str(chg).replace(',', ''))
-                        color = "#dc2626" if chg_f < 0 else "#16a34a"
-                        arrow = "▼" if chg_f < 0 else "▲"
-                        chg_str = f"<span style='color:{color};font-size:10px;'>{arrow}{abs(chg_f):,.2f}</span>"
-                    except Exception:
-                        pass
-                st.markdown(f"<div style='display:flex;justify-content:space-between;padding:4px 0;font-size:13px;'>"
-                           f"<span style='color:#94a3b8;'>{name}</span>"
-                           f"<span style='font-weight:700;color:#fff;'>{val} {chg_str}</span>"
-                           f"</div>", unsafe_allow_html=True)
-        except Exception:
-            st.caption("경제 지표를 불러올 수 없습니다.")
 
     st.markdown("---")
     st.markdown("""

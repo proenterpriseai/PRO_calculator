@@ -201,11 +201,10 @@ def render_dollar_insurance():
                         except Exception as e:
                             st.toast(f"❌ 시스템 오류 발생: {str(e)}", icon="🚨")
     
-                    st.button("🔄 실시간 수신", help="네이버/야후 금융 등 다중 소스를 통해 환율을 조회합니다.", on_click=update_exchange_rate)
+                    st.button("🔄실시간 수신", help="네이버/야후 금융 등 다중 소스를 통해 환율을 조회합니다.", on_click=update_exchange_rate, use_container_width=True, key="btn_fetch_rate")
+                    st.markdown("<style>[data-testid='stButton'] button[kind='secondary'] p { font-size: 0.82rem !important; white-space: nowrap !important; }</style>", unsafe_allow_html=True)
                     if 'exchange_rate_fetched_at' in st.session_state:
-                        st.caption(f"마지막 수신: {st.session_state['exchange_rate_fetched_at']}")
-                    else:
-                        st.caption("환율 미수신 — 수동 입력값 사용 중")
+                        st.markdown(f"<div style='font-size:0.7rem; color:#94a3b8; margin-top:-8px;'>수신: {st.session_state['exchange_rate_fetched_at']}</div>", unsafe_allow_html=True)
     
                 # Average Rate Logic
                 long_term_mean = 1250.0
@@ -234,6 +233,8 @@ def render_dollar_insurance():
                 rate_high = c_r3.number_input("상승(낙관)", min_value=500.0, max_value=3000.0, value=st.session_state.rate_high_val, step=10.0, key="rate_high_val")
                 
                 commission_rate = 0.0
+            # Placeholder for scenario cards (filled after calculation)
+            _ph_scenario = st.empty()
     else:
         # Presentation Mode: Load from State
         prod_type = st.session_state.di_prod if 'di_prod' in st.session_state else "메트라이프 (백만인을 위한 달러종신)"
@@ -388,18 +389,14 @@ def render_dollar_insurance():
     </div>
 </div>
 """)
-        
-        st.divider()
-        st.markdown("<br>", unsafe_allow_html=True) # Add spacing as requested
-        st.subheader("💱 환율 시나리오별 예상 환급금 (10년 시점)")
-        
+        # Placeholder for BEP (filled after calculation)
+        _ph_bep = st.empty()
+
         p_low = krw_ret_low - total_krw_paid
         p_mid = krw_ret_mid - total_krw_paid
         p_high = krw_ret_high - total_krw_paid
-        
-        # HTML 렌더링 (문자열 연결 연산자 사용으로 따옴표 충돌 원천 방지)
-        
-        # 1. 데이터 준비
+
+        # 데이터 준비
         rate_low_str = f"{int(rate_low):,}"
         val_low_str = f_w(krw_ret_low/10000)
         profit_low_num = (p_low/total_krw_paid*100) if total_krw_paid > 0 else 0
@@ -418,55 +415,69 @@ def render_dollar_insurance():
         profit_high_str = f"{profit_high_num:+.1f}% ({f_w(p_high/10000)}만)"
         color_high = "#ef4444" if p_high < 0 else "#16a34a"
 
-        # 2. HTML 조립
-        html = "<div style='display:flex; gap:12px; margin-bottom:24px; flex-wrap: wrap;'>"
-        
-        # 하락(비관) 카드
-        html += "<div style='flex:1; min-width: 150px; padding:16px; border-radius:16px; text-align:center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: linear-gradient(to bottom right, #f1f5f9, #e2e8f0); border: 1px solid #cbd5e1;'>"
-        html += "<div style='font-size:2rem; margin-bottom:8px;'>📉</div>"
-        html += "<div style='font-size:0.95rem; font-weight:bold; color:#475569; margin-bottom:2px;'>하락(비관)</div>"
-        html += "<div style='font-size:0.8rem; color:#64748b; margin-bottom:12px; font-family:Consolas, monospace;'>@" + rate_low_str + "원/$</div>"
-        html += "<div style='font-size:1.25rem; font-weight:800; color:#334155; margin-bottom:6px; letter-spacing:-0.5px;'>" + val_low_str + "만원</div>"
-        html += "<div style='font-size:0.85rem; font-weight:700; background:rgba(255,255,255,0.8); padding:4px 8px; border-radius:6px; display:inline-block; border:1px solid rgba(0,0,0,0.05); color:" + color_low + ";'>" + profit_low_str + "</div>"
-        html += "</div>"
+        # ── 시나리오 3카드 → col_input placeholder에 채우기 ──
+        scenario_html = "<div style='display:flex; gap:12px; margin-bottom:16px; flex-wrap: wrap;'>"
+        scenario_html += "<div style='flex:1; min-width:120px; padding:14px; border-radius:14px; text-align:center; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); background:linear-gradient(to bottom right,#f1f5f9,#e2e8f0); border:1px solid #cbd5e1;'>"
+        scenario_html += "<div style='font-size:1.6rem; margin-bottom:6px;'>📉</div>"
+        scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#475569;'>하락(비관)</div>"
+        scenario_html += "<div style='font-size:0.75rem; color:#64748b; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_low_str + "원/$</div>"
+        scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#334155; margin-bottom:4px;'>" + val_low_str + "만원</div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_low + ";'>" + profit_low_str + "</div></div>"
 
-        # 보합(중립) 카드
-        html += "<div style='flex:1; min-width: 150px; padding:16px; border-radius:16px; text-align:center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: linear-gradient(to bottom right, #eff6ff, #dbeafe); border: 1px solid #60a5fa;'>"
-        html += "<div style='font-size:2rem; margin-bottom:8px;'>☁️</div>"
-        html += "<div style='font-size:0.95rem; font-weight:bold; color:#1d4ed8; margin-bottom:2px;'>보합(중립)</div>"
-        html += "<div style='font-size:0.8rem; color:#3b82f6; margin-bottom:12px; font-family:Consolas, monospace;'>@" + rate_mid_str + "원/$</div>"
-        html += "<div style='font-size:1.25rem; font-weight:800; color:#1e40af; margin-bottom:6px; letter-spacing:-0.5px;'>" + val_mid_str + "만원</div>"
-        html += "<div style='font-size:0.85rem; font-weight:700; background:rgba(255,255,255,0.8); padding:4px 8px; border-radius:6px; display:inline-block; border:1px solid rgba(37, 99, 235, 0.1); color:" + color_mid + ";'>" + profit_mid_str + "</div>"
-        html += "</div>"
+        scenario_html += "<div style='flex:1; min-width:120px; padding:14px; border-radius:14px; text-align:center; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); background:linear-gradient(to bottom right,#eff6ff,#dbeafe); border:1px solid #60a5fa;'>"
+        scenario_html += "<div style='font-size:1.6rem; margin-bottom:6px;'>☁️</div>"
+        scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#1d4ed8;'>보합(중립)</div>"
+        scenario_html += "<div style='font-size:0.75rem; color:#3b82f6; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_mid_str + "원/$</div>"
+        scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#1e40af; margin-bottom:4px;'>" + val_mid_str + "만원</div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_mid + ";'>" + profit_mid_str + "</div></div>"
 
-        # 상승(낙관) 카드
-        html += "<div style='flex:1; min-width: 150px; padding:16px; border-radius:16px; text-align:center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); background: linear-gradient(to bottom right, #fff1f2, #fecdd3); border: 1px solid #f43f5e;'>"
-        html += "<div style='font-size:2rem; margin-bottom:8px;'>☀️</div>"
-        html += "<div style='font-size:0.95rem; font-weight:bold; color:#be123c; margin-bottom:2px;'>상승(낙관)</div>"
-        html += "<div style='font-size:0.8rem; color:#e11d48; margin-bottom:12px; font-family:Consolas, monospace;'>@" + rate_high_str + "원/$</div>"
-        html += "<div style='font-size:1.25rem; font-weight:800; color:#9f1239; margin-bottom:6px; letter-spacing:-0.5px;'>" + val_high_str + "만원</div>"
-        html += "<div style='font-size:0.85rem; font-weight:700; background:rgba(255,255,255,0.8); padding:4px 8px; border-radius:6px; display:inline-block; border:1px solid rgba(225, 29, 72, 0.1); color:" + color_high + ";'>" + profit_high_str + "</div>"
-        html += "</div>"
+        scenario_html += "<div style='flex:1; min-width:120px; padding:14px; border-radius:14px; text-align:center; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); background:linear-gradient(to bottom right,#fff1f2,#fecdd3); border:1px solid #f43f5e;'>"
+        scenario_html += "<div style='font-size:1.6rem; margin-bottom:6px;'>☀️</div>"
+        scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#be123c;'>상승(낙관)</div>"
+        scenario_html += "<div style='font-size:0.75rem; color:#e11d48; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_high_str + "원/$</div>"
+        scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#9f1239; margin-bottom:4px;'>" + val_high_str + "만원</div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_high + ";'>" + profit_high_str + "</div></div>"
+        scenario_html += "</div>"
 
-        html += "</div>"
-        
-        st.markdown(html, unsafe_allow_html=True)
-        
-        # Detailed BEP Explanation
-        with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기"):
-            html_block(f"""
-            <div class='logic-annotation'>
-                <b>🧮 산출 공식:</b> 총 납입 원화 ÷ 10년 시점 달러 해지환급금<br>
-                <br>
-                1. <b>총 납입 원화:</b> {f_w(total_krw_paid)}원 (월 ${f_w(total_premium_monthly)} × {months_paid}개월 × 평단 {avg_pay_rate}원)<br>
-                2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.2f}%)<br>
-                3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span> (10년 시점 기준 — 중간 환율 변동은 무관)<br>
-                4. <b>참고:</b> 메트라이프 백만종 상품은 나이/성별과 무관하게 납입기간에 따른 확정 환급률이 적용됩니다.<br>
-                <br>
-                👉 환급률 {rate_10_pet:.2f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
-                👉 현재 환율 대비 약 {((1 - bep_rate/current_rate) * 100):.0f}%까지 하락해도 손실이 없어, <b>지금이 시작하기 좋은 환율 구간</b>입니다.
-            </div>
-            """)
+        # Fill placeholders
+        drop_pct = ((1 - bep_rate/current_rate) * 100)
+
+        if not st.session_state.presentation_mode:
+            with _ph_scenario.container():
+                st.markdown("##### 💱 시나리오별 예상 환급금 (10년)")
+                st.markdown(scenario_html, unsafe_allow_html=True)
+            with _ph_bep.container():
+                with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기", expanded=True):
+                    html_block(f"""
+                    <div class='logic-annotation'>
+                        <b>🧮 산출 공식:</b> 총 납입 원화 ÷ 10년 시점 달러 해지환급금<br>
+                        <br>
+                        1. <b>총 납입 원화:</b> {f_w(total_krw_paid)}원 (월 ${f_w(total_premium_monthly)} × {months_paid}개월 × 평단 {avg_pay_rate}원)<br>
+                        2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.2f}%)<br>
+                        3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span> (10년 시점 기준 — 중간 환율 변동은 무관)<br>
+                        4. <b>참고:</b> 메트라이프 백만종 상품은 나이/성별과 무관하게 납입기간에 따른 확정 환급률이 적용됩니다.<br>
+                        <br>
+                        👉 환급률 {rate_10_pet:.2f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
+                        👉 현재 환율 대비 약 {drop_pct:.0f}%까지 하락해도 손실이 없어, <b>지금이 시작하기 좋은 환율 구간</b>입니다.
+                    </div>
+                    """)
+        else:
+            st.subheader("💱 환율 시나리오별 예상 환급금 (10년 시점)")
+            st.markdown(scenario_html, unsafe_allow_html=True)
+            with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기", expanded=True):
+                html_block(f"""
+                <div class='logic-annotation'>
+                    <b>🧮 산출 공식:</b> 총 납입 원화 ÷ 10년 시점 달러 해지환급금<br>
+                    <br>
+                    1. <b>총 납입 원화:</b> {f_w(total_krw_paid)}원 (월 ${f_w(total_premium_monthly)} × {months_paid}개월 × 평단 {avg_pay_rate}원)<br>
+                    2. <b>달러 환급금:</b> ${f_w(usd_val_10)} (원금 ${f_w(total_usd_paid_principal)} × 환급률 {rate_10_pet:.2f}%)<br>
+                    3. <b>손익분기 환율:</b> <span style='color:#e11d48; font-weight:bold;'>{bep_rate:.1f}원</span><br>
+                    4. <b>참고:</b> 메트라이프 백만종 상품은 나이/성별과 무관하게 납입기간에 따른 확정 환급률이 적용됩니다.<br>
+                    <br>
+                    👉 환급률 {rate_10_pet:.2f}% 덕분에, 10년 시점 환율이 {bep_rate:.1f}원 아래로만 떨어지지 않으면 <b>원화 기준 수익</b>입니다.<br>
+                    👉 현재 환율 대비 약 {drop_pct:.0f}%까지 하락해도 손실이 없어, <b>지금이 시작하기 좋은 환율 구간</b>입니다.
+                </div>
+                """)
 
     st.divider()
     
@@ -653,4 +664,6 @@ def render_dollar_insurance():
             </div>
         </div>
         """)
+
+
 

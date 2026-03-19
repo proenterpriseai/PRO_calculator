@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, RealEstateState, card_header
+from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, html_block, render_title_with_reset, RealEstateState, card_header
 from station_data import COMPLEX_DB, REGION_DB
 from core import get_capital_gains_tax_rate
 
@@ -232,7 +232,6 @@ def render_real_estate():
                 """)
 
         # AI Doctor Call
-        render_ai_doctor("취득세", {'tax': total_tax, 'h_count': h_count})
 
     # --- Tab 2: 보유세 ---
     with tab2:
@@ -355,7 +354,6 @@ def render_real_estate():
         st.session_state['result_jongbu_tax'] = j_tax_final
 
         # AI Doctor Call
-        render_ai_doctor("보유세", {'tax': j_tax_final})
 
     # --- Tab 3: 양도세 ---
     with tab3:
@@ -577,4 +575,4 @@ def render_real_estate():
         st.session_state['result_local_tax'] = local_income_tax
 
         # AI Doctor Call
-        render_ai_doctor("양도세", {'tax': final_tax, 'gain': gain})
+

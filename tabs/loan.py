@@ -147,3 +147,4 @@ def render_loan_planner():
                 </div>
             </div>
             """)
+

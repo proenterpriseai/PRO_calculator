@@ -1,6 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, f_kr, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, RetirementState, card_header
+from core import f_w, f_kr, comma_int_input, TaxEngine, html_block, render_title_with_reset, RetirementState, card_header
 from core import _run_retirement_mc_3phase, make_sync_callback
 from core import solve_monthly_rate
 
@@ -93,26 +93,13 @@ def render_retirement():
                     if yield_r > 20:
                         st.warning(f"⚠️ 연 {yield_r:.1f}%는 매우 높은 수익률입니다. 실제 시장 성과와 일치하는지 확인하세요.")
 
-            card_header("🚀 고도화 옵션")
-            with st.container(border=True):
-                c_opt1, c_opt2 = st.columns(2)
-                is_net_return = c_opt1.toggle("세후 수익률 적용 (15.4%)", value=False, key="ret_is_net")
-                is_monte_carlo = c_opt2.toggle("몬테카를로 스트레스 테스트", value=False, key="ret_is_mc")
-
-            comparative_mode = st.toggle("시나리오 비교 (A/B Test)", value=False, key="ret_is_compare")
-            risk_level = st.select_slider("투자 성향", options=[1, 2, 3, 4, 5], value=3, format_func=lambda x: ["안정", "안정추구", "중립", "적극", "공격"][x-1], key="ret_risk_level")
-
-    # Variables extraction (valid in both modes thanks to session_state)
+    # Variables extraction
     retire_age = st.session_state.ret_age_sl if 'ret_age_sl' in st.session_state else 60
     yy_life = st.session_state.life_age_sl if 'life_age_sl' in st.session_state else 90
     inf = st.session_state.inf_sl if 'inf_sl' in st.session_state else 3.0
     yield_r = st.session_state.yield_sl if 'yield_sl' in st.session_state else 6.0
 
     goal_p = st.session_state.ret_goal_p if 'ret_goal_p' in st.session_state else 3_000_000
-    is_net_return = st.session_state.ret_is_net if 'ret_is_net' in st.session_state else False
-    is_monte_carlo = st.session_state.ret_is_mc if 'ret_is_mc' in st.session_state else False
-    comparative_mode = st.session_state.ret_is_compare if 'ret_is_compare' in st.session_state else False
-    risk_level = st.session_state.ret_risk_level if 'ret_risk_level' in st.session_state else 3
 
     # New Period Variables
     y_s = retire_age - current_age # Total to Retirement
@@ -134,8 +121,7 @@ def render_retirement():
     if not st.session_state.presentation_mode:
         st.caption(f"💡 {display_name}님은 **{pay_years}년**간 납입, **{y_def}년** 거치 후 **{y_d}년**간 연금을 수령합니다.")
 
-    # Logic Adjustments
-    actual_yield = yield_r * 0.846 if is_net_return else yield_r
+    actual_yield = yield_r
 
 
     # Logic
@@ -254,189 +240,11 @@ def render_retirement():
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
 
-        # Comparative Mode logic
-        if comparative_mode:
-            if not st.session_state.presentation_mode:
-                with st.expander("📉 시나리오 B (보수적) 변수 설정", expanded=True):
-                    c_comp1, c_comp2 = st.columns(2)
-                    stress_yield_val = c_comp1.number_input("B 수익률 (%)", value=0.0, step=0.1, key="ret_stress_yield_val", help="보수적 시나리오의 투자수익률을 입력하세요.")
-                    stress_inf_val = c_comp2.number_input("B 물가 (%)", value=4.0, step=0.1, key="ret_stress_inf_val", help="보수적 시나리오의 물가상승률을 입력하세요.")
-
-            # Use values from state or defaults
-            s_yield = st.session_state.ret_stress_yield_val if 'ret_stress_yield_val' in st.session_state else max(0.0, yield_r - 2.0)
-            s_inf = st.session_state.ret_stress_inf_val if 'ret_stress_inf_val' in st.session_state else inf + 1.0
-
-            # Logic Adjustments for Scenario B
-            actual_stress_yield = s_yield * 0.846 if is_net_return else s_yield
-
-            # Recalculate curve for stress (월 복리)
-            stress_wealth = []
-            curr_stress = 0
-            stress_goal_f = goal_p * (1 + s_inf/100)**y_s
-            stress_monthly_yield = actual_stress_yield / 100 / 12
-
-            for age_v in years_v:
-                stress_wealth.append(curr_stress)
-                if age_v < current_age + pay_years:
-                    if stress_monthly_yield > 0:
-                        curr_stress = curr_stress * (1 + stress_monthly_yield)**12 + monthly_save * ((1 + stress_monthly_yield)**12 - 1) / stress_monthly_yield
-                    else:
-                        curr_stress = curr_stress + monthly_save * 12
-                elif age_v < retire_age:
-                    curr_stress = curr_stress * (1 + stress_monthly_yield)**12
-                else:
-                    if stress_monthly_yield > 0:
-                        curr_stress = curr_stress * (1 + stress_monthly_yield)**12 - stress_goal_f * ((1 + stress_monthly_yield)**12 - 1) / stress_monthly_yield
-                    else:
-                        curr_stress = curr_stress - stress_goal_f * 12
-
-            fig.add_trace(go.Scatter(
-                x=years_v, y=stress_wealth,
-                name=f'시나리오 B (수익률 {s_yield}%, 물가 {s_inf}%)',
-                line=dict(color='#ef4444', width=2, dash='dash')
-            ))
-
-            # Brief Summary for Scenario B
-            if actual_stress_yield > 0:
-                _stress_lump = stress_goal_f * ((1 - (1 + stress_monthly_yield) ** (-y_d*12)) / stress_monthly_yield)
-            else:
-                _stress_lump = stress_goal_f * y_d * 12
-            st.info(f"🚩 시나리오 B 적용 시, 은퇴 시점 필요 자금은 **{f_w(_stress_lump)}원**으로 변동됩니다.")
-
         st.plotly_chart(fig)
 
     # --- End of Top Columns ---
 
-    # --- Row 2: Portfolio Recommendation ---
-    st.divider()
-    with st.expander("📊 맞춤형 포트폴리오 제안", expanded=False):
-        if risk_level:
-            risk_type = st.radio("투자 성향 선택 (실시간)", ["위험안정형", "위험중립형", "위험선호형"], horizontal=True, key="risk_radio_ret_opt")
-            risk_map = {"위험안정형": 1, "위험중립형": 3, "위험선호형": 5}
-            risk_score = risk_map[risk_type]
-
-            rec = TaxEngine.get_portfolio_recommendation(risk_score)
-
-            c_p1, c_p2 = st.columns([1, 2])
-            with c_p1:
-                html_block(f"""
-                <div class='expert-card' style='margin-top:0;'>
-                    <div class='expert-title'>{rec['title']} 전략</div>
-                    <div style='font-size:0.9rem; color:#475569;'>
-                        고객님의 성향에 맞춰
-                        <b>주식 {rec['assets']['주식']}%</b>,
-                        <b>채권 {rec['assets']['채권']}%</b>,
-                        <b>현금성 {rec['assets']['현금성']}%</b>의
-                        비중을 제안합니다.
-                    </div>
-                </div>
-                """)
-
-            with c_p2:
-                fig_port = go.Figure(data=[go.Pie(
-                    labels=list(rec['assets'].keys()),
-                    values=list(rec['assets'].values()),
-                    hole=0.4,
-                    marker=dict(colors=['#1e3a8a', '#3b82f6', '#93c5fd'], line=dict(color='#ffffff', width=2)),
-                    textinfo='label+percent',
-                    hoverinfo='label+value+percent'
-                )])
-                fig_port.update_layout(
-                    title=dict(text=f"{rec['title']} 자산 배분", font=dict(size=16, color='#1e293b')),
-                    height=300,
-                    margin=dict(t=40, b=20, l=20, r=20),
-                    showlegend=True
-                )
-                st.plotly_chart(fig_port)
-
-    # --- Row 3: Monte Carlo (Full Width) ---
-    if is_monte_carlo:
-        st.divider()
-        st.subheader("🎲 몬테카를로 리스크 분석")
-
-        _vol = {1: 0.05, 2: 0.08, 3: 0.12, 4: 0.18, 5: 0.25}.get(risk_level, 0.12)
-        with st.spinner("🔄 1,000회 시뮬레이션 분석 중..."):
-            p10, p50, p90 = _run_retirement_mc_3phase(pay_years, y_def, y_d, monthly_save * 12, goal_f * 12, actual_yield, _vol)
-        mc_years = list(range(current_age, current_age + len(p10)))
-
-        _mc_cards = [
-            ("최악의 시나리오<br><span style='font-size:0.7rem;color:#64748b;'>(하위 10%)</span>", f"{f_w(p10[-1])} 원", "목표 미달 가능성", "#ef4444", "#fef2f2", "#fecaca"),
-            ("평균적 시나리오<br><span style='font-size:0.7rem;color:#64748b;'>(중위 값)</span>", f"{f_w(p50[-1])} 원", "예상 자산 잔존액", "#1e3a8a", "#f8fafc", "#e2e8f0"),
-            ("최상의 시나리오<br><span style='font-size:0.7rem;color:#64748b;'>(상위 10%)</span>", f"{f_w(p90[-1])} 원", "초과 달성 예상", "#16a34a", "#f0fdf4", "#bbf7d0"),
-        ]
-        _mc_html = "<div style='display:flex;flex-wrap:wrap;gap:10px;'>"
-        for _lbl, _val, _delta, _color, _bg, _border in _mc_cards:
-            _mc_html += f"""
-            <div style='flex:1;min-width:150px;background:{_bg};border-radius:10px;padding:14px 12px;border:1px solid {_border};box-shadow:0 1px 3px rgba(0,0,0,0.06);'>
-                <div style='font-size:0.82rem;font-weight:600;color:#475569;margin-bottom:6px;line-height:1.4;'>{_lbl}</div>
-                <div style='font-size:1.1rem;font-weight:800;color:{_color};word-break:break-all;'>{_val}</div>
-                <div style='font-size:0.78rem;color:#64748b;margin-top:4px;'>{_delta}</div>
-            </div>"""
-        _mc_html += "</div>"
-        st.markdown(_mc_html, unsafe_allow_html=True)
-
-        fig_mc = go.Figure()
-        fig_mc.add_trace(go.Scatter(x=mc_years, y=p90, mode='lines', line=dict(width=0), showlegend=False))
-        fig_mc.add_trace(go.Scatter(x=mc_years, y=p10, mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(59, 130, 246, 0.1)', showlegend=False))
-        fig_mc.add_trace(go.Scatter(x=mc_years, y=p50, name="평균 흐름", line=dict(color='#3b82f6', width=3)))
-        fig_mc.add_trace(go.Scatter(x=mc_years, y=p10, name="위험 하한선", line=dict(color='#ef4444', width=2, dash='dot')))
-
-        fig_mc.update_layout(
-            title="시나리오별 자산 변동 범위 (Confidence Interval)",
-            template="plotly_white",
-            plot_bgcolor='rgba(255,255,255,0)',
-            height=350,
-            margin=dict(l=20,r=20,t=40,b=20),
-            xaxis=dict(showgrid=True, gridcolor='#f1f5f9'),
-            yaxis=dict(showgrid=True, gridcolor='#f1f5f9')
-        )
-        st.plotly_chart(fig_mc)
-
-        with st.expander("ℹ️ 몬테카를로 분석이란?", expanded=False):
-             st.markdown("불확실한 투자 시장의 변동성을 반영하여 200번의 시뮬레이션을 수행한 결과입니다. 하위 10% 시나리오에서도 자산이 고갈되지 않는지 확인하세요.")
-
-    # --- Row 4: Comparative (Full Width) ---
-    if comparative_mode:
-        st.divider()
-        st.subheader("⚖️ 플랜 수익률 비교 (A vs B)")
-        yield_b = st.number_input("비교할 수익률(%)", value=8.0, step=0.1)
-        m_yield_b = yield_b / 100 / 12
-        v_pay_end_b = lump_sum_need / ((1 + m_yield_b) ** n_months_defer) if n_months_defer > 0 and m_yield_b > 0 else lump_sum_need
-        if n_months_pay > 0 and m_yield_b > 0:
-            m_save_b = v_pay_end_b * m_yield_b / ((1 + m_yield_b)**n_months_pay - 1)
-        elif n_months_pay > 0:
-            m_save_b = v_pay_end_b / n_months_pay
-        else:
-            m_save_b = 0
-
-        fig_comp = go.Figure(data=[
-            go.Bar(
-                name=f'현행 ({actual_yield:.1f}%)',
-                x=['필요 저축액'], y=[monthly_save],
-                marker_color='#1e3a8a',
-                text=[f"{f_w(monthly_save)} 원"],
-                textposition='auto',
-                marker=dict(line=dict(width=1, color='white')) # 3D effect hint
-            ),
-            go.Bar(
-                name=f'비교 ({yield_b:.1f}%)',
-                x=['필요 저축액'], y=[m_save_b],
-                marker_color='#94a3b8',
-                text=[f"{f_w(m_save_b)} 원"],
-                textposition='auto',
-                marker=dict(line=dict(width=1, color='white'))
-            )
-        ])
-        fig_comp.update_layout(
-            barmode='group',
-            height=300,
-            title="수익률별 저축 부담 비교",
-            plot_bgcolor='rgba(255,255,255,0)',
-            yaxis=dict(showgrid=True, gridcolor='#f1f5f9')
-        )
-        st.plotly_chart(fig_comp)
-
-    # --- Row 5: Detailed Report ---
+    # --- Detailed Report ---
     with st.expander("📝 은퇴 설계 상세 리포트", expanded=False):
         html_block(f"""
         <div class='expert-card'>
@@ -461,5 +269,4 @@ def render_retirement():
     st.session_state['result_ret_lump'] = lump_sum_need
     st.session_state['result_ret_goal'] = goal_f
 
-    # AI Doctor Call
-    render_ai_doctor("은퇴설계", {'goal': goal_f, 'saved': monthly_save})
+
