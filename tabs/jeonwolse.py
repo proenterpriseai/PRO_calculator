@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block, make_sync_callback
+from core import f_w, comma_int_input, html_block, make_sync_callback, render_title_with_reset, card_header
 
 
 def render_jeonwolse():
     """전월세 전환율 계산기"""
-    st.title("🏠 전월세 전환율 계산기")
+    render_title_with_reset("🏠 전월세 전환율 계산기", ["jw_"], "reset_jeonwolse")
     st.markdown("전세와 월세를 **전환율 기반**으로 상호 변환하고, 유불리를 분석합니다.")
 
     if st.session_state.presentation_mode:
@@ -18,34 +18,40 @@ def render_jeonwolse():
         with col_input:
             st.subheader("📋 전월세 조건 입력")
 
-            mode = st.radio("변환 방향", ["전세 → 월세", "월세 → 전세"], horizontal=True, key="jw_mode")
+            card_header("🔄 변환 방향")
+            with st.container(border=True):
+                mode = st.radio("변환 방향", ["전세 → 월세", "월세 → 전세"], horizontal=True, key="jw_mode")
 
-            if "전세 → 월세" in mode:
-                jeonse = comma_int_input("전세 보증금 (원)", 0, "jw_jeonse")
-                wolse_deposit = comma_int_input("월세 전환 시 보증금 (원)", 0, "jw_deposit")
-            else:
-                wolse_deposit = comma_int_input("월세 보증금 (원)", 0, "jw_deposit")
-                monthly_wolse = comma_int_input("월세 (원/월)", 0, "jw_wolse")
+            card_header("🏠 보증금/월세 정보")
+            with st.container(border=True):
+                if "전세 → 월세" in mode:
+                    jeonse = comma_int_input("전세 보증금 (원)", 0, "jw_jeonse")
+                    wolse_deposit = comma_int_input("월세 전환 시 보증금 (원)", 0, "jw_deposit")
+                else:
+                    wolse_deposit = comma_int_input("월세 보증금 (원)", 0, "jw_deposit")
+                    monthly_wolse = comma_int_input("월세 (원/월)", 0, "jw_wolse")
 
-            if 'jw_rate_sl' not in st.session_state: st.session_state.jw_rate_sl = 5.0
-            if 'jw_rate_num' not in st.session_state: st.session_state.jw_rate_num = 5.0
-            st.markdown("전월세 전환율 (%)")
-            _cr1, _cr2 = st.columns([2, 1])
-            _cr1.slider("전환율", 2.0, 12.0, step=0.5, key="jw_rate_sl", label_visibility="collapsed",
-                        on_change=make_sync_callback('jw_rate_sl', 'jw_rate_num'),
-                        help="전세보증금을 월세로 (또는 그 반대로) 전환할 때 적용되는 이율입니다. (법정 상한선: 기준금리+2%, 현재 4.50%)")
-            _cr2.number_input("전환율 입력", 2.0, 12.0, step=0.5, key="jw_rate_num", label_visibility="collapsed",
-                              on_change=make_sync_callback('jw_rate_num', 'jw_rate_sl'))
-            conversion_rate = st.session_state.jw_rate_sl
-            if 'jw_invest_rate' not in st.session_state: st.session_state.jw_invest_rate = 3.5
-            invest_rate = st.number_input("투자 기대수익률 (%)", min_value=0.0, max_value=20.0, step=0.5, key="jw_invest_rate",
-                help="전세 보증금 또는 여유 자금을 투자할 경우의 연간 기대수익률입니다. 전환율과 비교하여 유불리를 판정합니다.")
-            if conversion_rate > 4.50:
-                _has_jw_input = (st.session_state.get('jw_jeonse', 0) > 0 or
-                                 st.session_state.get('jw_deposit', 0) > 0 or
-                                 st.session_state.get('jw_wolse', 0) > 0)
-                if _has_jw_input:
-                    st.warning(f"⚠️ 입력한 전환율 **{conversion_rate}%** 는 법정 상한선 **4.50%** 를 초과합니다. 임대차 계약에 적용 시 법적 분쟁이 발생할 수 있습니다.", icon="⚠️")
+            card_header("📊 전환율·투자수익률")
+            with st.container(border=True):
+                if 'jw_rate_sl' not in st.session_state: st.session_state.jw_rate_sl = 5.0
+                if 'jw_rate_num' not in st.session_state: st.session_state.jw_rate_num = 5.0
+                st.markdown("전월세 전환율 (%)")
+                _cr1, _cr2 = st.columns([2, 1])
+                _cr1.slider("전환율", 2.0, 12.0, step=0.5, key="jw_rate_sl", label_visibility="collapsed",
+                            on_change=make_sync_callback('jw_rate_sl', 'jw_rate_num'),
+                            help="전세보증금을 월세로 (또는 그 반대로) 전환할 때 적용되는 이율입니다. (법정 상한선: 기준금리+2%, 현재 4.50%)")
+                _cr2.number_input("전환율 입력", 2.0, 12.0, step=0.5, key="jw_rate_num", label_visibility="collapsed",
+                                  on_change=make_sync_callback('jw_rate_num', 'jw_rate_sl'))
+                conversion_rate = st.session_state.jw_rate_sl
+                if 'jw_invest_rate' not in st.session_state: st.session_state.jw_invest_rate = 3.5
+                invest_rate = st.number_input("투자 기대수익률 (%)", min_value=0.0, max_value=20.0, step=0.5, key="jw_invest_rate",
+                    help="전세 보증금 또는 여유 자금을 투자할 경우의 연간 기대수익률입니다. 전환율과 비교하여 유불리를 판정합니다.")
+                if conversion_rate > 4.50:
+                    _has_jw_input = (st.session_state.get('jw_jeonse', 0) > 0 or
+                                     st.session_state.get('jw_deposit', 0) > 0 or
+                                     st.session_state.get('jw_wolse', 0) > 0)
+                    if _has_jw_input:
+                        st.warning(f"⚠️ 입력한 전환율 **{conversion_rate}%** 는 법정 상한선 **4.50%** 를 초과합니다. 임대차 계약에 적용 시 법적 분쟁이 발생할 수 있습니다.", icon="⚠️")
     else:
         mode = st.session_state.get('jw_mode', "전세 → 월세")
         jeonse = st.session_state.get('jw_jeonse', 300_000_000)

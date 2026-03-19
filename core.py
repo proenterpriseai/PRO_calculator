@@ -387,6 +387,85 @@ def init_session_state():
     if 'presentation_mode' in st.session_state:
         app_state.presentation_mode = st.session_state.presentation_mode
 
+def card_header(title):
+    """카드 섹션 헤더를 렌더링합니다."""
+    st.markdown(f"<div class='input-card-header'>{title}</div>", unsafe_allow_html=True)
+
+def render_title_with_reset(title, reset_prefixes, btn_key, default_states=None):
+    """탭 제목 + 초기화 버튼을 렌더링합니다.
+    - title: 제목 텍스트 (예: "🏠 부동산 통합 시뮬레이터")
+    - reset_prefixes: 초기화할 세션 키의 접두사 리스트 (예: ["acq_", "hold_", "yang_"])
+    - btn_key: 버튼의 고유 키 (예: "reset_real_estate")
+    - default_states: 기본값을 가진 dataclass 인스턴스 리스트 (예: [RealEstateState()])
+    """
+    col_title, col_btn = st.columns([5, 1])
+    with col_title:
+        # h1의 기본 border-bottom을 제거 (아래에서 전체 너비 선으로 대체)
+        st.markdown(
+            f"<h1 style='border-bottom:none; padding-bottom:0; margin-bottom:0;'>{title}</h1>",
+            unsafe_allow_html=True
+        )
+    with col_btn:
+        st.markdown("<div style='height: 12px'></div>", unsafe_allow_html=True)
+        if st.button("🔄 초기화", key=btn_key, help="이 탭의 입력값을 초기화합니다."):
+            # 1. DataClass 기반 기본값 복원
+            if default_states:
+                for default_obj in default_states:
+                    for f in fields(default_obj):
+                        default_val = getattr(default_obj, f.name)
+                        st.session_state[f.name] = default_val
+                        # comma_int_input이 생성하는 _str 접미사 키도 초기화
+                        str_key = f"{f.name}_str"
+                        if str_key in st.session_state:
+                            if isinstance(default_val, int):
+                                st.session_state[str_key] = "" if default_val == 0 else f"{default_val:,}"
+                            else:
+                                del st.session_state[str_key]
+
+            # 2. 접두사 매칭으로 추가 키 삭제 (위젯 키, 결과 키 등)
+            _system_keys = {'app_state', 'presentation_mode'}
+            keys_to_delete = []
+            # DataClass 필드 이름 수집 (이미 복원됐으므로 삭제 대상에서 제외)
+            restored_keys = set()
+            if default_states:
+                for default_obj in default_states:
+                    for f in fields(default_obj):
+                        restored_keys.add(f.name)
+                        restored_keys.add(f"{f.name}_str")
+
+            for key in list(st.session_state.keys()):
+                if key in _system_keys or key in restored_keys:
+                    continue
+                if key.startswith('reset_') or key.startswith('FormSubmitter:'):
+                    continue
+                for prefix in reset_prefixes:
+                    if key.startswith(prefix):
+                        keys_to_delete.append(key)
+                        break
+
+            for key in keys_to_delete:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+            # 3. AppConfig 동기화
+            if 'app_state' in st.session_state:
+                app_state = st.session_state.app_state
+                if default_states:
+                    for default_obj in default_states:
+                        cls_name = type(default_obj).__name__
+                        for attr_name in ['real_estate', 'inheritance', 'retirement', 'target_fund', 'dollar_insurance']:
+                            if type(getattr(app_state, attr_name)).__name__ == cls_name:
+                                setattr(app_state, attr_name, type(default_obj)())
+                                break
+
+            st.toast("🔄 초기화되었습니다.", icon="✅")
+            st.rerun()
+    # 전체 너비 구분선 (h1 대체)
+    st.markdown(
+        "<hr style='border:none; border-top:3px solid #1e3a8a; margin-top:0; margin-bottom:30px;'>",
+        unsafe_allow_html=True
+    )
+
 init_session_state()
 
 # ============================================================

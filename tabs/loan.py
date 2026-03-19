@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block
+from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header
 
 
 def render_loan_planner():
     """대출 상환 설계"""
-    st.title("🏦 대출 상환 설계")
+    render_title_with_reset("🏦 대출 상환 설계", ["loan_"], "reset_loan")
     st.markdown("원리금균등, 원금균등, 만기일시상환 3가지 상환 방식을 **한눈에 비교**합니다.")
 
     if st.session_state.presentation_mode:
@@ -17,9 +17,11 @@ def render_loan_planner():
     if not st.session_state.presentation_mode:
         with col_input:
             st.subheader("📋 대출 조건 입력")
-            loan_amount = comma_int_input("대출 원금 (원)", 0, "loan_amt")
-            loan_rate = st.slider("연 이자율 (%)", 1.0, 15.0, 4.0, step=0.1, key="loan_rate")
-            loan_years = st.slider("대출 기간 (년)", 1, 40, 30, key="loan_years")
+            card_header("💰 대출 조건")
+            with st.container(border=True):
+                loan_amount = comma_int_input("대출 원금 (원)", 0, "loan_amt")
+                loan_rate = st.slider("연 이자율 (%)", 1.0, 15.0, 4.0, step=0.1, key="loan_rate")
+                loan_years = st.slider("대출 기간 (년)", 1, 40, 30, key="loan_years")
     else:
         loan_amount = st.session_state.get('loan_amt', 300_000_000)
         loan_rate = st.session_state.get('loan_rate', 4.0)

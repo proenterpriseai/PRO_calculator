@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
+from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, InheritanceState, card_header
 from core import get_tax_rate_5steps
 
 def render_inheritance():
-    st.title("🎁 상속 및 증여세 시뮬레이터")
+    render_title_with_reset("🎁 상속 및 증여세 시뮬레이터", ["gif_", "inh_", "result_gift", "result_inh"], "reset_inheritance", default_states=[InheritanceState()])
     st.markdown("복잡한 상속/증여 계산을 누진세율 효과까지 고려하여 정밀하게 시뮬레이션합니다.")
 
     tab1, tab2 = st.tabs(["증여세 (10년 합산/부담부)", "상속세 (일괄/배우자)"])
@@ -18,28 +18,29 @@ def render_inheritance():
             col_input, col_result = st.columns([1, 1.3], gap="large")
 
         if not st.session_state.presentation_mode:
-            with col_input:
+             with col_input:
                 st.subheader("📋 증여세 계산")
-                curr = comma_int_input("증여 가액 (원)", st.session_state.gif_c, "gif_c", help="이번에 배우자나 자녀에게 증여하고자 하는 재산(현금, 부동산 등)의 총 평가액입니다.")
-                prev = comma_int_input("10년 내 사전증여액(원)", 0, "gif_p", help="과거 10년 이내에 같은 사람(동일인)에게 이미 증여했던 재산가액의 합계입니다. 누진과세를 위해 합산됩니다.")
-                prev_tax = comma_int_input("기납부 증여세액(원)", 0, "gif_p_tax", help="과거 사전증여 당시 이미 납부했던 증여세액입니다. (이중과세 방지를 위해 기납부세액으로 공제됩니다.)")
-                debt = comma_int_input("부담부 채무액(원)", 0, "gif_d", help="부동산 증여 시 함께 넘겨주는 전세보증금이나 담보대출액 등 수증자(받는사람)가 대신 갚기로 한 채무액입니다.")
-                if st.session_state.get('gif_d', 0) > 0:
-                    st.warning(f"⚠️ 부담부 증여: 채무 부분({f_w(st.session_state.get('gif_d',0))}원)은 **증여자에게 양도소득세**가 과세됩니다. 채무액이 증여자의 취득가를 초과하는 경우 양도차익에 대해 별도 양도소득세가 발생하므로 반드시 확인하십시오.")
-
-                rel = st.selectbox("수증자 관계", ["배우자(6억)", "성년 자녀(5천만)", "미성년 자녀(2천만)", "직계존속(5천만)", "기타친족(1천만)", "형제자매(1천만)"], key="gif_r")
-                prev_used_ded = comma_int_input("10년 내 이미 사용한 공제액(원)", 0, "gif_prev_ded",
-                    help="과거 10년 이내 동일인에게 증여 시 이미 공제받은 금액. 공제한도는 10년 누적 관리되므로 잔여 공제액만 적용됩니다.")
-
-                is_startup = st.checkbox("창업자금 증여 과세특례 적용 (5억 한도, 10% 단일세율)",
-                    key="gif_startup",
-                    help="60세 이상 부모가 18세 이상 자녀에게 창업 목적으로 증여 시 최대 5억원 한도로 10% 단일세율 적용 (일반 누진세율 대신). 요건: 창업일로부터 3년 이내 증여.")
-                is_overseas = st.checkbox("국외 재산 증여 여부 (신고기한 6개월 적용)", key="gif_overseas",
-                    help="국외에 소재하는 재산을 증여하는 경우 신고·납부 기한이 6개월로 연장됩니다.")
-
-                c1, c2 = st.columns(2)
-                is_gen_skip = c1.checkbox("세대생략 증여 (할증부과)", value=False, key="gif_skip")
-                is_minor_high = c2.checkbox("수증자 미성년 (20억 초과 시 40% 적용)", value=False, key="gif_minor", disabled=not is_gen_skip)
+                card_header("💰 증여 금액")
+                with st.container(border=True):
+                    curr = comma_int_input("증여 가액 (원)", st.session_state.gif_c, "gif_c", help="이번에 배우자나 자녀에게 증여하고자 하는 재산(현금, 부동산 등)의 총 평가액입니다.")
+                    prev = comma_int_input("10년 내 사전증여액(원)", 0, "gif_p", help="과거 10년 이내에 같은 사람(동일인)에게 이미 증여했던 재산가액의 합계입니다. 누진과세를 위해 합산됩니다.")
+                    prev_tax = comma_int_input("기납부 증여세액(원)", 0, "gif_p_tax", help="과거 사전증여 당시 이미 납부했던 증여세액입니다. (이중과세 방지를 위해 기납부세액으로 공제됩니다.)")
+                    debt = comma_int_input("부담부 채무액(원)", 0, "gif_d", help="부동산 증여 시 함께 넘겨주는 전세보증금이나 담보대출액 등 수증자(받는사람)가 대신 갚기로 한 채무액입니다.")
+                    if st.session_state.get('gif_d', 0) > 0:
+                        st.warning(f"⚠️ 부담부 증여: 채무 부분({f_w(st.session_state.get('gif_d',0))}원)은 **증여자에게 양도소득세**가 과세됩니다. 채무액이 증여자의 취득가를 초과하는 경우 양도차익에 대해 별도 양도소득세가 발생하므로 반드시 확인하십시오.")
+                card_header("👤 수증자 정보")
+                with st.container(border=True):
+                    rel = st.selectbox("수증자 관계", ["배우자(6억)", "성년 자녀(5천만)", "미성년 자녀(2천만)", "직계존속(5천만)", "기타친족(1천만)", "형제자매(1천만)"], key="gif_r")
+                    prev_used_ded = comma_int_input("10년 내 이미 사용한 공제액(원)", 0, "gif_prev_ded",
+                        help="과거 10년 이내 동일인에게 증여 시 이미 공제받은 금액. 공제한도는 10년 누적 관리되므로 잔여 공제액만 적용됩니다.")
+                    is_startup = st.checkbox("창업자금 증여 과세특례 적용 (5억 한도, 10% 단일세율)",
+                        key="gif_startup",
+                        help="60세 이상 부모가 18세 이상 자녀에게 창업 목적으로 증여 시 최대 5억원 한도로 10% 단일세율 적용 (일반 누진세율 대신). 요건: 창업일로부터 3년 이내 증여.")
+                    is_overseas = st.checkbox("국외 재산 증여 여부 (신고기한 6개월 적용)", key="gif_overseas",
+                        help="국외에 소재하는 재산을 증여하는 경우 신고·납부 기한이 6개월로 연장됩니다.")
+                    c1, c2 = st.columns(2)
+                    is_gen_skip = c1.checkbox("세대생략 증여 (할증부과)", value=False, key="gif_skip")
+                    is_minor_high = c2.checkbox("수증자 미성년 (20억 초과 시 40% 적용)", value=False, key="gif_minor", disabled=not is_gen_skip)
         else:
             curr = st.session_state.get('gif_c', 300_000_000)
             prev = st.session_state.get('gif_p', 0)
@@ -210,6 +211,8 @@ def render_inheritance():
 
                 with st.container():
                     st.markdown("##### 1. 상속 재산")
+                card_header("💰 상속 재산")
+                with st.container(border=True):
                     estate_val = comma_int_input("상속 재산 총액 (원)", st.session_state.inh_ev, "inh_ev", help="고인(피상속인)이 남긴 예금, 주식, 부동산(평가액 기준) 등 모든 재산의 총합입니다.")
                     nontax_estate = comma_int_input("비과세 재산 (원)", 0, "inh_nontax",
                         help="국가·지방자치단체·공익법인에 상속·출연하는 재산은 상속세 과세가액에 산입하지 않습니다.")
@@ -219,12 +222,11 @@ def render_inheritance():
                         help="며느리·사위·손자 등 법정상속인이 아닌 자에게 사망 전 5년 이내에 증여한 재산 가액.")
                     prev_gift_inh = prev_gift_heir + prev_gift_nonheir
                     prev_tax_inh = comma_int_input("기납부 증여세액 (원)", 0, "inh_prev_tax", help="합산된 사전증여재산에 대해 과거에 이미 납부했던 증여세액 합계입니다.")
-
                     debt_inh = comma_int_input("공제 대상 채무액 (원)", 0, "inh_d", help="고인이 남긴 대출금, 미납세금, 반환해야 할 임대보증금 등 상속재산에서 차감될 부채입니다.")
                     funeral = comma_int_input("장례비용(원)", 0, "inh_f", help="장례를 치르는 데 사용된 비용입니다. (기본 500만원 ~ 최대 1,000만원 한도 내 공제, 봉안시설 500만원 별도 추가 가능)")
 
-                with st.container():
-                    st.markdown("##### 2. 상속 공제 설정")
+                card_header("⚙️ 상속 공제 설정")
+                with st.container(border=True):
                     has_spouse = st.checkbox("배우자 생존", value=True if 'inh_sp' not in st.session_state else st.session_state.inh_sp, key="inh_sp")
 
                     # Spouse Deduction Logic

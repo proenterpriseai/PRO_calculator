@@ -1,10 +1,10 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, make_sync_callback, TaxEngine, _run_tf_mc, html_block
+from core import f_w, f_kr, comma_int_input, make_sync_callback, TaxEngine, _run_tf_mc, html_block, render_title_with_reset, TargetFundState, card_header
 
 
 def render_target_fund():
-    st.title("🎯 목적자금 계산")
+    render_title_with_reset("🎯 목적자금 계산", ["tf_"], "reset_target_fund", default_states=[TargetFundState()])
     st.markdown("주택 마련, 결혼, 자녀 교육 등 구체적인 재무 목표 달성을 위한 최적의 저축 플랜을 제시합니다.")
     
     if st.session_state.presentation_mode:
@@ -18,20 +18,21 @@ def render_target_fund():
             st.subheader("📋 목적자금 설계 입력")
             
             # Personal Info
-            with st.container():
-                st.markdown("##### 1. 고객정보")
+            card_header("👤 고객정보")
+            with st.container(border=True):
                 c_name, c_age = st.columns([1.5, 1])
                 client_name = c_name.text_input("고객 성함", "", key="tf_name")
                 current_age = c_age.number_input("현재 나이", min_value=20, max_value=100, value=40, key="tf_age")
 
-            st.markdown("##### 2. 목표 설정")
-            calc_type = st.radio("계산 방식 선택", ["목표 필요 자금", "매월 잉여 금액"], key="tf_calc_type", horizontal=True)
-            if calc_type == "목표 필요 자금":
-                target_amt = comma_int_input("목표 금액(원)", st.session_state.tf_b, "tf_b")
-                input_monthly = st.session_state.get('tf_monthly_input', 0)  # 이전 값 보존
-            else:
-                input_monthly = comma_int_input("매월 잉여 금액(원)", st.session_state.get('tf_monthly_input', 1000000), "tf_monthly_input")
-                target_amt = st.session_state.get('tf_b', 0)  # 이전 목표금액 보존
+            card_header("🎯 목표 설정")
+            with st.container(border=True):
+                calc_type = st.radio("계산 방식 선택", ["목표 필요 자금", "매월 잉여 금액"], key="tf_calc_type", horizontal=True)
+                if calc_type == "목표 필요 자금":
+                    target_amt = comma_int_input("목표 금액(원)", st.session_state.tf_b, "tf_b")
+                    input_monthly = st.session_state.get('tf_monthly_input', 0)
+                else:
+                    input_monthly = comma_int_input("매월 잉여 금액(원)", st.session_state.get('tf_monthly_input', 1000000), "tf_monthly_input")
+                    target_amt = st.session_state.get('tf_b', 0)
     else:
         client_name = st.session_state.get('tf_name', "")
         current_age = st.session_state.get('tf_age', 40)
@@ -51,20 +52,22 @@ def render_target_fund():
 
     if not st.session_state.presentation_mode:
         with col_input:
-            st.markdown("준비 기간(년)")
-            c1, c2 = st.columns([2, 1])
-            with c1: period = st.slider("준비 기간", min_value=1, max_value=30, key='tf_period_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_period_sl', 'tf_period_num'))
-            with c2: period = st.number_input("기간 입력", min_value=1, max_value=30, key='tf_period_num', label_visibility="collapsed", on_change=make_sync_callback('tf_period_num', 'tf_period_sl'))
+            card_header("📊 수익률 설정")
+            with st.container(border=True):
+                st.markdown("준비 기간(년)")
+                c1, c2 = st.columns([2, 1])
+                with c1: period = st.slider("준비 기간", min_value=1, max_value=30, key='tf_period_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_period_sl', 'tf_period_num'))
+                with c2: period = st.number_input("기간 입력", min_value=1, max_value=30, key='tf_period_num', label_visibility="collapsed", on_change=make_sync_callback('tf_period_num', 'tf_period_sl'))
 
-            st.markdown("적금 금리(%)")
-            cs1, cs2 = st.columns([2, 1])
-            with cs1: top_sav_rate = st.slider("적금 금리", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_sl', 'tf_sav_rate_num'))
-            with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_num', 'tf_sav_rate_sl'))
+                st.markdown("적금 금리(%)")
+                cs1, cs2 = st.columns([2, 1])
+                with cs1: top_sav_rate = st.slider("적금 금리", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_sl', 'tf_sav_rate_num'))
+                with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_num', 'tf_sav_rate_sl'))
 
-            st.markdown("기대 수익률(%)")
-            c3, c4 = st.columns([2, 1])
-            with c3: rate = st.slider("기대 수익률", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_sl', 'tf_rate_num'))
-            with c4: rate = st.number_input("수익률 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_num', 'tf_rate_sl'))
+                st.markdown("기대 수익률(%)")
+                c3, c4 = st.columns([2, 1])
+                with c3: rate = st.slider("기대 수익률", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_sl', 'tf_rate_num'))
+                with c4: rate = st.number_input("수익률 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_num', 'tf_rate_sl'))
             
             st.markdown("---")
             # Removed 세후 수익률 적용

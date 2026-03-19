@@ -1,11 +1,11 @@
 import streamlit as st
 import plotly.graph_objects as go
-from core import f_w, f_kr, comma_int_input, TaxEngine, render_ai_doctor, html_block
+from core import f_w, f_kr, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, RetirementState, card_header
 from core import _run_retirement_mc_3phase, make_sync_callback
 from core import solve_monthly_rate
 
 def render_retirement():
-    st.title("⏳ 은퇴자금 계산")
+    render_title_with_reset("⏳ 은퇴자금 계산", ["ret_", "pay_years_", "life_age_", "inf_", "yield_", "risk_radio_ret", "result_ret"], "reset_retirement", default_states=[RetirementState()])
     st.markdown("고객님의 현재 나이와 목표, 경제 변수를 반영한 **1:1 맞춤형 은퇴 설계 솔루션**입니다.")
 
     if st.session_state.presentation_mode:
@@ -19,8 +19,8 @@ def render_retirement():
             st.subheader("📋 은퇴 설계 입력")
 
             # 1. Personal Info
-            with st.container():
-                st.markdown("##### 1. 고객정보")
+            card_header("👤 고객정보")
+            with st.container(border=True):
                 c_name, c_age = st.columns([1.5, 1])
                 client_name = c_name.text_input("고객 성함", "", key="ret_name")
                 current_age = c_age.number_input("현재 나이", min_value=20, max_value=100, value=40, key="ret_age")
@@ -36,7 +36,7 @@ def render_retirement():
     if not st.session_state.presentation_mode:
         with col_input:
             # 2. Timeline
-            st.markdown("##### 2. 은퇴 타임라인")
+            card_header("📅 은퇴 타임라인")
 
             # Helper callbacks for sync
             if 'pay_years_sl' not in st.session_state: st.session_state.pay_years_sl = 10
@@ -49,26 +49,27 @@ def render_retirement():
             # UI Rendering (Reordered)
             y_s_limit = max(1, st.session_state.ret_age_sl - current_age)
 
-            c_p1, c_p2 = st.columns([2, 1])
-            with c_p1: st.slider("납입 기간 (년)", min_value=1, max_value=max(y_s_limit, 2), key='pay_years_sl', disabled=(y_s_limit <= 1), on_change=make_sync_callback('pay_years_sl', 'pay_years_num'))
-            with c_p2:
-                st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
-                st.number_input("납입 기간 입력", min_value=1, max_value=max(y_s_limit, 1), key='pay_years_num', label_visibility="collapsed", on_change=make_sync_callback('pay_years_num', 'pay_years_sl'))
+            with st.container(border=True):
+                c_p1, c_p2 = st.columns([2, 1])
+                with c_p1: st.slider("납입 기간 (년)", min_value=1, max_value=max(y_s_limit, 2), key='pay_years_sl', disabled=(y_s_limit <= 1), on_change=make_sync_callback('pay_years_sl', 'pay_years_num'))
+                with c_p2:
+                    st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
+                    st.number_input("납입 기간 입력", min_value=1, max_value=max(y_s_limit, 1), key='pay_years_num', label_visibility="collapsed", on_change=make_sync_callback('pay_years_num', 'pay_years_sl'))
 
-            c1, c2 = st.columns([2, 1])
-            with c1: st.slider("은퇴 목표 나이", min_value=current_age, max_value=max(90, current_age + 1), key='ret_age_sl', on_change=make_sync_callback('ret_age_sl', 'ret_age_num'))
-            with c2:
-                st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
-                st.number_input("은퇴 나이(세)", min_value=current_age, max_value=max(90, current_age), key='ret_age_num', label_visibility="collapsed", on_change=make_sync_callback('ret_age_num', 'ret_age_sl'))
+                c1, c2 = st.columns([2, 1])
+                with c1: st.slider("은퇴 목표 나이", min_value=current_age, max_value=max(90, current_age + 1), key='ret_age_sl', on_change=make_sync_callback('ret_age_sl', 'ret_age_num'))
+                with c2:
+                    st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
+                    st.number_input("은퇴 나이(세)", min_value=current_age, max_value=max(90, current_age), key='ret_age_num', label_visibility="collapsed", on_change=make_sync_callback('ret_age_num', 'ret_age_sl'))
 
-            c3, c4 = st.columns([2, 1])
-            with c3: st.slider("기대 수명 (은퇴 종료)", min_value=current_age, max_value=max(110, current_age + 1), key='life_age_sl', on_change=make_sync_callback('life_age_sl', 'life_age_num'))
-            with c4:
-                st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
-                st.number_input("기대 수명(세)", min_value=current_age, max_value=max(110, current_age), key='life_age_num', label_visibility="collapsed", on_change=make_sync_callback('life_age_num', 'life_age_sl'))
+                c3, c4 = st.columns([2, 1])
+                with c3: st.slider("기대 수명 (은퇴 종료)", min_value=current_age, max_value=max(110, current_age + 1), key='life_age_sl', on_change=make_sync_callback('life_age_sl', 'life_age_num'))
+                with c4:
+                    st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
+                    st.number_input("기대 수명(세)", min_value=current_age, max_value=max(110, current_age), key='life_age_num', label_visibility="collapsed", on_change=make_sync_callback('life_age_num', 'life_age_sl'))
 
             # 3. Financials
-            st.markdown("##### 3. 재무 변수")
+            card_header("📊 재무 변수")
 
             # Sync for Financials
             if 'inf_sl' not in st.session_state: st.session_state.inf_sl = 3.0
@@ -76,26 +77,27 @@ def render_retirement():
             if 'yield_sl' not in st.session_state: st.session_state.yield_sl = 6.0
             if 'yield_num' not in st.session_state: st.session_state.yield_num = 6.0
 
-            c_a, c_b = st.columns(2)
-            with c_a:
-                st.markdown("물가상승률(%)")
-                c_a1, c_a2 = st.columns([2, 1])
-                inf = c_a1.slider("물가상승률", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=make_sync_callback('inf_sl', 'inf_num'))
-                inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=make_sync_callback('inf_num', 'inf_sl'))
+            with st.container(border=True):
+                c_a, c_b = st.columns(2)
+                with c_a:
+                    st.markdown("물가상승률(%)")
+                    c_a1, c_a2 = st.columns([2, 1])
+                    inf = c_a1.slider("물가상승률", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=make_sync_callback('inf_sl', 'inf_num'))
+                    inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=make_sync_callback('inf_num', 'inf_sl'))
 
-            with c_b:
-                st.markdown("투자수익률(%)")
-                c_b1, c_b2 = st.columns([2, 1])
-                yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=30.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=make_sync_callback('yield_sl', 'yield_num'))
-                yield_r = c_b2.number_input("투자수익률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=make_sync_callback('yield_num', 'yield_sl'))
-                if yield_r > 20:
-                    st.warning(f"⚠️ 연 {yield_r:.1f}%는 매우 높은 수익률입니다. 실제 시장 성과와 일치하는지 확인하세요.")
+                with c_b:
+                    st.markdown("투자수익률(%)")
+                    c_b1, c_b2 = st.columns([2, 1])
+                    yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=30.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=make_sync_callback('yield_sl', 'yield_num'))
+                    yield_r = c_b2.number_input("투자수익률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=make_sync_callback('yield_num', 'yield_sl'))
+                    if yield_r > 20:
+                        st.warning(f"⚠️ 연 {yield_r:.1f}%는 매우 높은 수익률입니다. 실제 시장 성과와 일치하는지 확인하세요.")
 
-            st.markdown("---")
-            st.markdown("##### 🚀 고도화 옵션")
-            c_opt1, c_opt2 = st.columns(2)
-            is_net_return = c_opt1.toggle("세후 수익률 적용 (15.4%)", value=False, key="ret_is_net")
-            is_monte_carlo = c_opt2.toggle("몬테카를로 스트레스 테스트", value=False, key="ret_is_mc")
+            card_header("🚀 고도화 옵션")
+            with st.container(border=True):
+                c_opt1, c_opt2 = st.columns(2)
+                is_net_return = c_opt1.toggle("세후 수익률 적용 (15.4%)", value=False, key="ret_is_net")
+                is_monte_carlo = c_opt2.toggle("몬테카를로 스트레스 테스트", value=False, key="ret_is_mc")
 
             comparative_mode = st.toggle("시나리오 비교 (A/B Test)", value=False, key="ret_is_compare")
             risk_level = st.select_slider("투자 성향", options=[1, 2, 3, 4, 5], value=3, format_func=lambda x: ["안정", "안정추구", "중립", "적극", "공격"][x-1], key="ret_risk_level")

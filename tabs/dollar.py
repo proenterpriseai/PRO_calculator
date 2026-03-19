@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block
+from core import f_w, comma_int_input, html_block, render_title_with_reset, DollarInsuranceState, card_header
 
 
 def render_dollar_insurance():
-    st.title("💵 달러 설계")
+    render_title_with_reset("💵 달러 설계", ["di_", "input_curr_rate", "curr_rate_val", "avg_rate_val", "rate_low_val", "rate_mid_val", "rate_high_val", "exchange_rate_fetched_at"], "reset_dollar", default_states=[DollarInsuranceState()])
     st.markdown("사망 보장 종신보험에 확정 금리와 환율 변동성을 활용한 해약환급금을 통해 전략적인 달러 마련의 기능까지 갖춘 보장성 플랜입니다.")
     
     # Data: Refund Rate Table (메트라이프 백만종 실제 보너스 구조 기반)
@@ -91,8 +91,8 @@ def render_dollar_insurance():
             st.subheader("📋 달러 설계 입력")
             
             # Product & Client
-            with st.container():
-                st.markdown("##### 1. 기본 정보")
+            card_header("📋 기본 정보")
+            with st.container(border=True):
                 
                 prod_type = st.selectbox("상품 선택", ["메트라이프 (백만인을 위한 달러종신)", "타사 달러보험 (일반형)"], key="di_prod")
                 
@@ -111,7 +111,8 @@ def render_dollar_insurance():
                 total_premium_monthly = premium_usd + add_premium_usd
                 
                  # Exchange Rate Specs
-                st.markdown("##### 2. 환율 시나리오 (원/달러)")
+                card_header("💱 환율 시나리오")
+                with st.container(border=True):
                 
                 # Real-time Fetch Logic (Robust Requests)
                 r_c1, r_c2 = st.columns([2.5, 1])

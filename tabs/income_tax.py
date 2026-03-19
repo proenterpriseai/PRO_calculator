@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from core import f_w, comma_int_input, html_block
+from core import f_w, comma_int_input, html_block, render_title_with_reset, card_header
 
 
 def render_income_tax():
     """종합소득세 시뮬레이터"""
-    st.title("💼 종합소득세 시뮬레이터")
+    render_title_with_reset("💼 종합소득세 시뮬레이터", ["it_"], "reset_income_tax")
     st.markdown("다양한 소득원을 입력하면 **종합과세 vs 분리과세**를 비교합니다.")
 
     if st.session_state.presentation_mode:
@@ -39,27 +39,30 @@ def render_income_tax():
         with col_input:
             st.subheader("📋 소득 항목 입력")
 
-            st.markdown("##### 1. 근로소득")
-            salary = comma_int_input("총급여 (원/년)", 0, "it_salary")
+            card_header("💼 근로소득")
+            with st.container(border=True):
+                salary = comma_int_input("총급여 (원/년)", 0, "it_salary")
 
-            st.markdown("##### 2. 금융소득 (이자/배당)")
-            c1, c2 = st.columns(2)
-            with c1:
-                interest_income = comma_int_input("이자소득 (원/년)", 0, "it_interest")
-            with c2:
-                dividend_income = comma_int_input("배당소득 (원/년)", 0, "it_dividend")
+            card_header("💰 금융소득 (이자/배당)")
+            with st.container(border=True):
+                c1, c2 = st.columns(2)
+                with c1:
+                    interest_income = comma_int_input("이자소득 (원/년)", 0, "it_interest")
+                with c2:
+                    dividend_income = comma_int_input("배당소득 (원/년)", 0, "it_dividend")
 
-            st.markdown("##### 3. 사업소득 (임대/부업 포함)")
-            business_income = comma_int_input("사업소득금액 (매출-필요경비)", 0, "it_business")
+            card_header("🏢 사업소득")
+            with st.container(border=True):
+                business_income = comma_int_input("사업소득금액 (매출-필요경비)", 0, "it_business")
 
-            st.markdown("##### 4. 연금소득")
-            pension_income = comma_int_input("연금소득금액 (공적/사적 연금)", 0, "it_pension")
+            card_header("📋 연금·기타소득")
+            with st.container(border=True):
+                pension_income = comma_int_input("연금소득금액 (공적/사적 연금)", 0, "it_pension")
+                etc_income = comma_int_input("기타소득금액 (강연료/인세 등)", 0, "it_etc")
 
-            st.markdown("##### 5. 기타소득")
-            etc_income = comma_int_input("기타소득금액 (강연료/인세 등)", 0, "it_etc")
-
-            st.markdown("##### 6. 공제 항목")
-            basic_ded = comma_int_input("인적공제·기본공제 (원)", 0, "it_basic_ded")
+            card_header("🧾 공제 항목")
+            with st.container(border=True):
+                basic_ded = comma_int_input("인적공제·기본공제 (원)", 0, "it_basic_ded")
 
             st.divider()
             with st.expander("ℹ️ 종합과세 vs 분리과세 가이드", expanded=True):

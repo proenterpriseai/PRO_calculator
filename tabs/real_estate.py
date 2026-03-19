@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block
+from core import f_w, f_kr, show_kr_label, comma_int_input, TaxEngine, render_ai_doctor, html_block, render_title_with_reset, RealEstateState, card_header
 from station_data import COMPLEX_DB, REGION_DB
 from core import get_capital_gains_tax_rate
 
@@ -19,7 +19,7 @@ def render_real_estate():
         if k not in st.session_state:
             st.session_state[k] = v
 
-    st.title("🏠 부동산 통합 시뮬레이터")
+    render_title_with_reset("🏠 부동산 통합 시뮬레이터", ["acq_", "hold_", "yang_", "result_acq", "result_hold", "result_yang", "result_prop", "result_jongbu", "result_local"], "reset_real_estate", default_states=[RealEstateState()])
     st.markdown("취득, 보유, 양도 전 단계에 걸친 세금을 정밀하게 분석하고 절세 전략을 수립합니다.")
 
     # A. Smart Search (Global - Above Tabs)
@@ -82,12 +82,15 @@ def render_real_estate():
         if not st.session_state.presentation_mode:
             with col_input:
                 st.subheader("📋 매물 정보 입력")
-                with st.container():
+                card_header("🏠 매물 기본정보")
+                with st.container(border=True):
                     prop_type = st.selectbox("부동산 종류",
                         ["주택(매매)", "주택(증여)", "주택(상속)", "농지(자경)", "농지(비자경)", "농지(증여)", "농지(상속)", "법인(취득)", "기타 토지/상가"],
                         key="acq_type")
                     area = st.number_input("전용면적(㎡)", value=84.0 if 'acq_area' not in st.session_state else st.session_state.acq_area, key="acq_area", help="건축물대장이나 등기부등본에 기재된 전용면적(평방미터)을 입력하세요. 국민주택규모인 85㎡를 초과하면 농어촌특별세가 추가로 부과되어 세금이 늘어납니다.")
                     price = comma_int_input("취득 가액 (실거래가/원)", st.session_state.acq_p, "acq_p", help="부동산을 실제 매수한 (또는 매수할) 실거래 가격을 입력하세요.")
+                card_header("💰 세율 조건")
+                with st.container(border=True):
                     _lock_hcount = "상속" in prop_type or "법인" in prop_type
                     h_count = st.selectbox("주택수 (취득시점 기준)", ["1주택", "2주택", "3주택", "4주택 이상"], key="acq_h",
                         help="이번에 취득하는 주택을 포함하여 세대원이 보유한 총 주택 수입니다.",
@@ -242,13 +245,14 @@ def render_real_estate():
         if not st.session_state.presentation_mode:
             with col_input:
                 st.subheader("📋 보유 현황 입력")
-                off_p = comma_int_input("주택 공시가격 (총합/원)", st.session_state.hold_p, "hold_p", help="보유하고 있는 모든 주택의 국토교통부 고시 공시가격 합계를 입력하세요. (통상 실거래가의 60~70% 수준)")
-                h_type = st.radio("보유 형태", ["1주택(단독)", "1주택(공동명의)", "다주택"], horizontal=True, key="hold_h")
-                if h_type == "1주택(공동명의)":
-                    st.caption("💡 공동명의: 1세대 1주택 특례 적용 시 12억 공제 + 세액공제. (특례 미적용 시 각 9억, 합산 18억 가능하나 세액공제 없음)")
-
-                with st.container():
-                    st.caption("세액공제 요건 (1주택자)")
+                card_header("🏠 보유 조건")
+                with st.container(border=True):
+                    off_p = comma_int_input("주택 공시가격 (총합/원)", st.session_state.hold_p, "hold_p", help="보유하고 있는 모든 주택의 국토교통부 고시 공시가격 합계를 입력하세요. (통상 실거래가의 60~70% 수준)")
+                    h_type = st.radio("보유 형태", ["1주택(단독)", "1주택(공동명의)", "다주택"], horizontal=True, key="hold_h")
+                    if h_type == "1주택(공동명의)":
+                        st.caption("💡 공동명의: 1세대 1주택 특례 적용 시 12억 공제 + 세액공제. (특례 미적용 시 각 9억, 합산 18억 가능하나 세액공제 없음)")
+                card_header("📋 세액공제 요건")
+                with st.container(border=True):
                     c_a, c_b = st.columns(2)
                     age = c_a.slider("연령", 20, 90, 60, key="hold_age")
                     hold_y = c_b.slider("보유기간(년)", 0, 30, 10, key="hold_y")
@@ -372,32 +376,35 @@ def render_real_estate():
                         st.rerun()
                     else:
                         st.toast("⚠️ 취득세 탭에 가격을 먼저 입력해주세요.", icon="⚠️")
-                asset_type = st.selectbox("자산 유형",
-                    ["주택", "분양권(2021년 이후 취득)", "비사업용 토지", "일반 건물/상가", "토지(일반)"],
-                    key="yang_asset",
-                    help="자산 유형에 따라 단기보유 중과세율, 비사업용 토지 중과 등이 달리 적용됩니다.")
-                sell_p = comma_int_input("양도 가액 (실제 매도가/원)", st.session_state.yang_s, "yang_s", help="부동산을 매도하는 (또는 매도예정인) 실제 거래가격을 입력하세요.")
+                card_header("💰 거래 금액")
+                with st.container(border=True):
+                    asset_type = st.selectbox("자산 유형",
+                        ["주택", "분양권(2021년 이후 취득)", "비사업용 토지", "일반 건물/상가", "토지(일반)"],
+                        key="yang_asset",
+                        help="자산 유형에 따라 단기보유 중과세율, 비사업용 토지 중과 등이 달리 적용됩니다.")
+                    sell_p = comma_int_input("양도 가액 (실제 매도가/원)", st.session_state.yang_s, "yang_s", help="부동산을 매도하는 (또는 매도예정인) 실제 거래가격을 입력하세요.")
 
-                # 이월과세 체크박스
-                is_rollover = st.checkbox("이월과세 적용 (배우자·직계존비속 증여 후 5년 이내 양도)", value=False, key="yang_rollover",
-                    help="증여받은 자산을 5년 이내 양도 시, 증여자의 원래 취득가액으로 양도차익을 계산합니다.")
-                if is_rollover:
-                    st.warning("⚠️ 이월과세: '취득 가액' 란에 증여자(배우자 등)의 최초 취득가액을 입력하세요.")
+                    # 이월과세 체크박스
+                    is_rollover = st.checkbox("이월과세 적용 (배우자·직계존비속 증여 후 5년 이내 양도)", value=False, key="yang_rollover",
+                        help="증여받은 자산을 5년 이내 양도 시, 증여자의 원래 취득가액으로 양도차익을 계산합니다.")
+                    if is_rollover:
+                        st.warning("⚠️ 이월과세: '취득 가액' 란에 증여자(배우자 등)의 최초 취득가액을 입력하세요.")
 
-                buy_p = comma_int_input("취득 가액 (과거 매입가/원)", st.session_state.yang_b, "yang_b",
-                    help="과거 매수 시 취득가격. 이월과세 적용 시 증여자의 최초 취득가액을 입력하세요.")
-                expenses = comma_int_input("필요경비 (중개수수료/인테리어 등/원)", 0, "yang_exp",
-                    help="인정 필요경비: 취득세, 법무사 비용, 중개수수료, 자본적 지출(샷시·보일러 등 내구성 개량비). 단순 수리비·도배·청소는 불인정.")
+                    buy_p = comma_int_input("취득 가액 (과거 매입가/원)", st.session_state.yang_b, "yang_b",
+                        help="과거 매수 시 취득가격. 이월과세 적용 시 증여자의 최초 취득가액을 입력하세요.")
+                    expenses = comma_int_input("필요경비 (중개수수료/인테리어 등/원)", 0, "yang_exp",
+                        help="인정 필요경비: 취득세, 법무사 비용, 중개수수료, 자본적 지출(샷시·보일러 등 내구성 개량비). 단순 수리비·도배·청소는 불인정.")
+                card_header("⚙️ 과세 옵션")
+                with st.container(border=True):
+                    _is_housing = asset_type == "주택"
+                    c1, c2 = st.columns(2)
+                    is_1h = c1.checkbox("1세대 1주택 비과세", value=True if 'yang_1h' not in st.session_state else st.session_state.yang_1h, key="yang_1h", disabled=not _is_housing)
+                    multi_house_surcharge = c2.selectbox("다주택 중과", ["없음", "2주택 (+20%p)", "3주택 이상 (+30%p)", "4주택 이상 (+30%p)"], key="yang_multi", disabled=(is_1h and _is_housing))
 
-                _is_housing = asset_type == "주택"
-                c1, c2 = st.columns(2)
-                is_1h = c1.checkbox("1세대 1주택 비과세", value=True if 'yang_1h' not in st.session_state else st.session_state.yang_1h, key="yang_1h", disabled=not _is_housing)
-                multi_house_surcharge = c2.selectbox("다주택 중과", ["없음", "2주택 (+20%p)", "3주택 이상 (+30%p)", "4주택 이상 (+30%p)"], key="yang_multi", disabled=(is_1h and _is_housing))
-
-                st.caption("장기보유특별공제 입력")
-                c3, c4 = st.columns(2)
-                h_years = c3.slider("보유기간 (년)", 0, 30, 10, key="yang_h_y")
-                r_years = c4.slider("거주기간 (년)", 0, 30, 5, key="yang_r_y", disabled=not (is_1h and _is_housing))
+                    st.caption("장기보유특별공제 입력")
+                    c3, c4 = st.columns(2)
+                    h_years = c3.slider("보유기간 (년)", 0, 30, 10, key="yang_h_y")
+                    r_years = c4.slider("거주기간 (년)", 0, 30, 5, key="yang_r_y", disabled=not (is_1h and _is_housing))
 
                 # 거주요건 검증
                 if _is_housing and is_1h and r_years < 2:

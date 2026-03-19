@@ -410,6 +410,111 @@ st.markdown("""
         position: fixed !important;
         bottom: -100px !important;
     }
+
+    /* ============================================ */
+    /* === Card-Based Input UI Styles ===          */
+    /* ============================================ */
+    
+    /* Card header label */
+    .input-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 2px;
+        margin-top: 16px;
+        padding-left: 4px;
+        letter-spacing: -0.3px;
+    }
+    .input-card-header:first-child {
+        margin-top: 0;
+    }
+    
+    /* Override st.container(border=True) for card style */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"] {
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        border-left: 4px solid #3b82f6 !important;
+        border-radius: 12px !important;
+        padding: 4px 8px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03) !important;
+        transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
+        margin-bottom: 12px !important;
+    }
+    div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        box-shadow: 0 4px 12px rgba(30,58,138,0.08), 0 2px 4px rgba(0,0,0,0.04) !important;
+        border-color: #cbd5e1 !important;
+        border-left-color: #1e3a8a !important;
+    }
+    
+    /* === Input Widget Polish === */
+    
+    /* Text & Number Inputs: Focus glow */
+    .stTextInput input, .stNumberInput input {
+        border-radius: 8px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        background: #fafbfc !important;
+        font-size: 0.95rem !important;
+    }
+    .stTextInput input:focus, .stNumberInput input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+        background: white !important;
+        outline: none !important;
+    }
+    
+    /* Selectbox: Modern dropdown */
+    .stSelectbox > div > div {
+        border-radius: 8px !important;
+        border: 1.5px solid #e2e8f0 !important;
+        transition: border-color 0.2s ease !important;
+        background: #fafbfc !important;
+    }
+    .stSelectbox > div > div:hover {
+        border-color: #93c5fd !important;
+    }
+    
+    /* Slider: Theme-matched colors */
+    .stSlider [data-testid="stThumbValue"] {
+        color: #1e3a8a !important;
+        font-weight: 700 !important;
+    }
+    .stSlider > div > div > div[role="slider"] {
+        background-color: #1e3a8a !important;
+        border: 2px solid white !important;
+        box-shadow: 0 1px 4px rgba(30,58,138,0.3) !important;
+    }
+    .stSlider [data-baseweb="slider"] > div:first-child {
+        background: linear-gradient(90deg, #3b82f6, #1e3a8a) !important;
+    }
+    .stSlider [data-baseweb="slider"] > div:nth-child(2) {
+        background: #e2e8f0 !important;
+    }
+    
+    /* Checkbox & Toggle: Theme alignment */
+    .stCheckbox label span[data-testid="stCheckbox"] {
+        border-color: #93c5fd !important;
+    }
+    
+    /* Labels: Better typography */
+    label[data-testid="stWidgetLabel"] p {
+        font-weight: 600 !important;
+        color: #334155 !important;
+        font-size: 0.88rem !important;
+    }
+    
+    /* Radio buttons: cleaner look */
+    .stRadio [role="radiogroup"] label {
+        border-radius: 8px !important;
+        transition: background-color 0.15s ease !important;
+    }
+    .stRadio [role="radiogroup"] label:hover {
+        background-color: #f1f5f9 !important;
+    }
+    
     </style>
     """, unsafe_allow_html=True)
 
