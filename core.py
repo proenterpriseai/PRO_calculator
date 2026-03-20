@@ -352,6 +352,18 @@ class LoanState:
     loan_years: int = 30
 
 @dataclass
+class SavingsState:
+    dep_amount: int = 10_000_000
+    dep_rate: float = 3.5
+    dep_months: int = 12
+    dep_tax: str = "일반과세"
+    sav_amount: int = 300_000
+    sav_rate: float = 3.5
+    sav_months: int = 12
+    sav_tax: str = "일반과세"
+    sav_goal_amount: int = 0
+
+@dataclass
 class AppConfig:
     """통합 세션 상태 관리 모델 (도메인별 분리)"""
     real_estate: RealEstateState = field(default_factory=RealEstateState)
@@ -362,6 +374,7 @@ class AppConfig:
     income_tax: IncomeTaxState = field(default_factory=IncomeTaxState)
     jeonwolse: JeonwolseState = field(default_factory=JeonwolseState)
     loan: LoanState = field(default_factory=LoanState)
+    savings: SavingsState = field(default_factory=SavingsState)
     presentation_mode: bool = False
 
 def init_session_state():
@@ -383,6 +396,7 @@ def init_session_state():
     sync_to_session(app_state.retirement)
     sync_to_session(app_state.target_fund)
     sync_to_session(app_state.dollar_insurance)
+    sync_to_session(app_state.savings)
 
     if 'presentation_mode' not in st.session_state:
         st.session_state.presentation_mode = app_state.presentation_mode

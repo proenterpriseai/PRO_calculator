@@ -510,9 +510,9 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     _MENU_ICONS = {
-        "부동산 통합": "🏠", "상속 및 증여세": "🎁", "은퇴자금 설계": "🏖️",
-        "목적자금 설계": "🎯", "달러 설계": "💵", "전월세 전환 설계": "🏘️",
-        "대출 상환 설계": "🏦", "종합소득세 계산": "📊",
+        "부동산 통합": "🏠", "상속 및 증여세": "🎁", "예적금 계산기": "💰",
+        "은퇴자금 설계": "🏖️", "목적자금 설계": "🎯", "달러 설계": "💵",
+        "전월세 전환 설계": "🏘️", "대출 상환 설계": "🏦", "종합소득세 계산": "📊",
     }
     _menu_items = list(_MENU_ICONS.keys())
 
@@ -573,6 +573,9 @@ if "부동산" in main_menu:
 elif "상속" in main_menu:
     from tabs.inheritance import render_inheritance
     render_inheritance()
+elif "예적금" in main_menu:
+    from tabs.savings import render_savings
+    render_savings()
 elif "은퇴" in main_menu:
     from tabs.retirement import render_retirement
     render_retirement()
