@@ -4,6 +4,11 @@ from core import f_w, f_kr, comma_int_input, html_block, render_title_with_reset
 
 
 TAX_RATES = {"일반과세": 0.154, "세금우대": 0.095, "비과세": 0.0}
+TAX_LABELS = {
+    "일반과세": ("15.4%", "이자소득세 14% + 지방소득세 1.4%", "#ef4444"),
+    "세금우대": ("9.5%", "조합 등 세금우대 저축 (농협·수협·신협·새마을금고 등)", "#f59e0b"),
+    "비과세": ("0%", "비과세종합저축 (만 65세 이상, 장애인 등 대상)", "#22c55e"),
+}
 
 
 def render_savings():
@@ -13,7 +18,7 @@ def render_savings():
         "reset_savings",
         default_states=[SavingsState()],
     )
-    st.markdown("예금과 적금의 **단리 이자**를 계산하고, 만기 수령액을 확인하세요.")
+    st.markdown("예금과 적금의 **이자를 계산**하고, 만기 수령액을 통해 **목적 자금 계획**을 수립합니다.")
 
     tab1, tab2 = st.tabs(["🏦 예금 계산기", "💰 적금 계산기"])
 
@@ -21,6 +26,19 @@ def render_savings():
         _render_deposit()
     with tab2:
         _render_installment()
+
+
+def _render_tax_info_cards():
+    """과세 구분 안내 카드 3열 (공용)"""
+    cards = ""
+    for name, (rate, desc, color) in TAX_LABELS.items():
+        cards += f"""
+        <div style="flex:1; min-width:140px; background:white; border-radius:10px; padding:14px; border-left:4px solid {color};">
+            <div style="font-size:14px; font-weight:700; color:#1e293b; margin-bottom:4px;">{name}</div>
+            <div style="font-size:20px; font-weight:800; color:{color}; margin-bottom:6px;">{rate}</div>
+            <div style="font-size:11px; color:#64748b; line-height:1.4;">{desc}</div>
+        </div>"""
+    return f'<div style="display:flex; gap:10px; flex-wrap:wrap;">{cards}</div>'
 
 
 # ──────────────────────────────────────────────
@@ -55,31 +73,30 @@ def _render_deposit():
                     key="dep_rate",
                 )
 
-                # 슬라이더 + 숫자입력 동기화
-                if "dep_months_sl" not in st.session_state:
-                    st.session_state.dep_months_sl = 12
-                if "dep_months_num" not in st.session_state:
-                    st.session_state.dep_months_num = 12
+                if "dep_years_sl" not in st.session_state:
+                    st.session_state.dep_years_sl = 1
+                if "dep_years_num" not in st.session_state:
+                    st.session_state.dep_years_num = 1
 
-                st.markdown("예치 기간 (개월)")
+                st.markdown("예치 기간 (년)")
                 c1, c2 = st.columns([2, 1])
                 with c1:
                     st.slider(
                         "예치 기간",
                         min_value=1,
-                        max_value=60,
-                        key="dep_months_sl",
+                        max_value=10,
+                        key="dep_years_sl",
                         label_visibility="collapsed",
-                        on_change=make_sync_callback("dep_months_sl", "dep_months_num"),
+                        on_change=make_sync_callback("dep_years_sl", "dep_years_num"),
                     )
                 with c2:
                     st.number_input(
                         "예치 기간 입력",
                         min_value=1,
-                        max_value=60,
-                        key="dep_months_num",
+                        max_value=10,
+                        key="dep_years_num",
                         label_visibility="collapsed",
-                        on_change=make_sync_callback("dep_months_num", "dep_months_sl"),
+                        on_change=make_sync_callback("dep_years_num", "dep_years_sl"),
                     )
 
                 dep_tax_type = st.radio(
@@ -93,11 +110,11 @@ def _render_deposit():
         dep_rate = st.session_state.get("dep_rate", 3.5)
         dep_tax_type = st.session_state.get("dep_tax", "일반과세")
 
-    dep_months = st.session_state.get("dep_months_sl", 12)
+    dep_years = st.session_state.get("dep_years_sl", 1)
     tax_rate = TAX_RATES.get(dep_tax_type if not st.session_state.presentation_mode else st.session_state.get("dep_tax", "일반과세"), 0.154)
 
     # ── 계산 ──
-    pre_tax_interest = dep_amount * (dep_rate / 100) * (dep_months / 12)
+    pre_tax_interest = dep_amount * (dep_rate / 100) * dep_years
     tax_amount = pre_tax_interest * tax_rate
     post_tax_interest = pre_tax_interest - tax_amount
     maturity = dep_amount + post_tax_interest
@@ -108,84 +125,124 @@ def _render_deposit():
 
         # KPI 카드
         html_block(f"""
-        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px;">
-            <div style="flex:1; min-width:140px; background:#f0f9ff; border-radius:12px; padding:16px; text-align:center; border:1px solid #bae6fd;">
-                <div style="font-size:13px; color:#0369a1;">세전 이자</div>
-                <div style="font-size:22px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+            <div style="background:#f0f9ff; border-radius:12px; padding:14px 18px; border:1px solid #bae6fd;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#0369a1; font-weight:600;">세전 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(dep_amount)} x {dep_rate}% x {dep_years}년</div>
             </div>
-            <div style="flex:1; min-width:140px; background:#f0fdf4; border-radius:12px; padding:16px; text-align:center; border:1px solid #bbf7d0;">
-                <div style="font-size:13px; color:#15803d;">세후 이자</div>
-                <div style="font-size:22px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</div>
+            <div style="background:#f0fdf4; border-radius:12px; padding:14px 18px; border:1px solid #bbf7d0;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#15803d; font-weight:600;">세후 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
             </div>
-            <div style="flex:1; min-width:140px; background:#fefce8; border-radius:12px; padding:16px; text-align:center; border:1px solid #fde68a;">
-                <div style="font-size:13px; color:#a16207;">만기 수령액</div>
-                <div style="font-size:24px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</div>
+            <div style="background:#fefce8; border-radius:12px; padding:14px 18px; border:1px solid #fde68a;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#a16207; font-weight:600;">만기 수령액</span>
+                    <span style="font-size:22px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">원금 {f_w(dep_amount)} + 세후이자 {f_w(round(post_tax_interest))}</div>
             </div>
         </div>
         """)
 
-        # 도넛 차트
+        # 워터폴 차트
+        y_max = maturity * 1.15
         fig = go.Figure(
-            data=[
-                go.Pie(
-                    labels=["원금", "세후 이자"],
-                    values=[dep_amount, max(0, round(post_tax_interest))],
-                    hole=0.55,
-                    marker=dict(colors=["#3b82f6", "#22c55e"]),
-                    textinfo="label+percent",
-                    textfont=dict(size=14),
-                    hovertemplate="%{label}: %{value:,.0f}원<extra></extra>",
-                )
-            ]
+            go.Waterfall(
+                x=["원금", "세전 이자", "세금", "만기 수령액"],
+                measure=["absolute", "relative", "relative", "total"],
+                y=[dep_amount, round(pre_tax_interest), -round(tax_amount), 0],
+                text=[f"{f_w(dep_amount)}", f"+{f_w(round(pre_tax_interest))}", f"-{f_w(round(tax_amount))}", f"{f_w(round(maturity))}"],
+                textposition="outside",
+                textfont=dict(size=12),
+                connector=dict(line=dict(color="#cbd5e1", width=1, dash="dot")),
+                increasing=dict(marker=dict(color="#22c55e")),
+                decreasing=dict(marker=dict(color="#ef4444")),
+                totals=dict(marker=dict(color="#f59e0b")),
+                hovertemplate="%{x}: %{y:,.0f}원<extra></extra>",
+            )
         )
         fig.update_layout(
+            yaxis=dict(tickformat=",", title="금액 (원)", range=[0, y_max]),
+            margin=dict(t=60, b=30, l=60, r=20),
+            height=380,
             showlegend=False,
-            margin=dict(t=30, b=20, l=20, r=20),
-            height=320,
-            annotations=[
-                dict(
-                    text=f"<b>만기<br>{f_w(round(maturity))}원</b>",
-                    x=0.5,
-                    y=0.5,
-                    font_size=15,
-                    showarrow=False,
-                )
-            ],
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # 세금 상세
-        if tax_rate > 0:
-            html_block(f"""
-            <div style="background:#fef2f2; border-radius:10px; padding:12px 16px; margin-bottom:12px; border:1px solid #fecaca;">
-                <span style="font-size:13px; color:#991b1b;">💸 세금: <b>{f_w(round(tax_amount))}원</b> (세율 {tax_rate*100:.1f}%)</span>
-            </div>
-            """)
-
-        # 설명
+        # 계산 방법 안내
         with st.expander("📋 예금 계산 방법 안내"):
-            st.markdown(f"""
-**정기예금 단리 계산 공식**
+            _render_deposit_guide(dep_amount, dep_rate, dep_years, pre_tax_interest, tax_amount, post_tax_interest, maturity, tax_rate)
 
-```
-세전 이자 = 원금 × 연이율 × (기간 ÷ 12)
-         = {f_w(dep_amount)} × {dep_rate}% × ({dep_months} ÷ 12)
-         = {f_w(round(pre_tax_interest))}원
-```
 
-| 구분 | 금액 |
-|------|------|
-| 예치 원금 | {f_w(dep_amount)}원 |
-| 세전 이자 | {f_w(round(pre_tax_interest))}원 |
-| 이자 세금 ({tax_rate*100:.1f}%) | {f_w(round(tax_amount))}원 |
-| **세후 이자** | **{f_w(round(post_tax_interest))}원** |
-| **만기 수령액** | **{f_w(round(maturity))}원** |
+def _render_deposit_guide(dep_amount, dep_rate, dep_years, pre_tax, tax_amt, post_tax, maturity, tax_rate):
+    """예금 계산 방법 안내 — 전문 디자인"""
+    html_block(f"""
+    <div style="font-family:sans-serif;">
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">📐 정기예금 단리 계산 공식</div>
+            <div style="background:white; border-radius:8px; padding:14px; border:1px solid #e2e8f0;">
+                <div style="font-size:13px; color:#334155; line-height:2;">
+                    <div><b>세전 이자</b> = 원금 x 연이율 x 예치기간(년)</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(dep_amount)}원 x {dep_rate}% x {dep_years}년 = <b style="color:#0369a1;">{f_w(round(pre_tax))}원</b></div>
+                    <div style="margin-top:6px;"><b>세후 이자</b> = 세전 이자 - (세전 이자 x 세율(이자소득세 15.4%))</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(round(pre_tax))}원 - {f_w(round(tax_amt))}원 = <b style="color:#15803d;">{f_w(round(post_tax))}원</b></div>
+                    <div style="margin-top:6px;"><b>만기 수령액</b> = 원금 + 세후 이자</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(dep_amount)}원 + {f_w(round(post_tax))}원 = <b style="color:#78350f;">{f_w(round(maturity))}원</b></div>
+                </div>
+            </div>
+        </div>
 
-**과세 구분 안내**
-- **일반과세 (15.4%)**: 이자소득세 14% + 지방소득세 1.4%
-- **세금우대 (9.5%)**: 조합 등 세금우대 저축 (농협, 수협, 신협, 새마을금고 등)
-- **비과세 (0%)**: 비과세종합저축 (만 65세 이상, 장애인 등 대상)
-""")
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">📊 상세 내역</div>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">예치 원금</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{f_w(dep_amount)}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">연 이율</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{dep_rate}%</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">예치 기간</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{dep_years}년 ({dep_years * 12}개월)</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">세전 이자</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#0369a1;">{f_w(round(pre_tax))}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">이자 과세 ({tax_rate*100:.1f}%)</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#ef4444;">-{f_w(round(tax_amt))}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">세후 이자</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#15803d;">{f_w(round(post_tax))}원</td>
+                </tr>
+                <tr style="background:#fefce8;">
+                    <td style="padding:12px 8px; font-weight:700; color:#78350f;">만기 수령액</td>
+                    <td style="padding:12px 8px; text-align:right; font-weight:800; font-size:15px; color:#78350f;">{f_w(round(maturity))}원</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">💡 과세 구분 안내</div>
+            {_render_tax_info_cards()}
+            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.5;">
+                * 이자소득이 연 2,000만원을 초과하면 금융소득종합과세 대상이 될 수 있습니다.<br>
+                * 세금우대 저축은 조합원 가입이 필요하며, 1인 최대 3,000만원 한도입니다.<br>
+                * 비과세종합저축은 만 65세 이상·장애인 등 대상이며, 1인 최대 5,000만원 한도입니다.
+            </div>
+        </div>
+    </div>
+    """)
 
 
 # ──────────────────────────────────────────────
@@ -220,30 +277,30 @@ def _render_installment():
                     key="sav_rate",
                 )
 
-                if "sav_months_sl" not in st.session_state:
-                    st.session_state.sav_months_sl = 12
-                if "sav_months_num" not in st.session_state:
-                    st.session_state.sav_months_num = 12
+                if "sav_years_sl" not in st.session_state:
+                    st.session_state.sav_years_sl = 1
+                if "sav_years_num" not in st.session_state:
+                    st.session_state.sav_years_num = 1
 
-                st.markdown("납입 기간 (개월)")
+                st.markdown("납입 기간 (년)")
                 c1, c2 = st.columns([2, 1])
                 with c1:
                     st.slider(
                         "납입 기간",
                         min_value=1,
-                        max_value=60,
-                        key="sav_months_sl",
+                        max_value=10,
+                        key="sav_years_sl",
                         label_visibility="collapsed",
-                        on_change=make_sync_callback("sav_months_sl", "sav_months_num"),
+                        on_change=make_sync_callback("sav_years_sl", "sav_years_num"),
                     )
                 with c2:
                     st.number_input(
                         "납입 기간 입력",
                         min_value=1,
-                        max_value=60,
-                        key="sav_months_num",
+                        max_value=10,
+                        key="sav_years_num",
                         label_visibility="collapsed",
-                        on_change=make_sync_callback("sav_months_num", "sav_months_sl"),
+                        on_change=make_sync_callback("sav_years_num", "sav_years_sl"),
                     )
 
                 sav_tax_type = st.radio(
@@ -253,42 +310,22 @@ def _render_installment():
                     key="sav_tax",
                 )
 
-            # 목표 금액 역산
-            card_header("🎯 목표 금액 역산")
-            with st.container(border=True):
-                use_goal = st.checkbox("목표 금액 역산 사용", key="sav_use_goal")
-                if use_goal:
-                    sav_goal = comma_int_input(
-                        "목표 금액 (원)",
-                        st.session_state.get("sav_goal_amount", 5_000_000),
-                        "sav_goal_amount",
-                    )
     else:
         sav_amount = st.session_state.get("sav_amount", 300_000)
         sav_rate = st.session_state.get("sav_rate", 3.5)
         sav_tax_type = st.session_state.get("sav_tax", "일반과세")
-        use_goal = st.session_state.get("sav_use_goal", False)
 
-    sav_months = st.session_state.get("sav_months_sl", 12)
+    sav_years = st.session_state.get("sav_years_sl", 1)
+    n = sav_years * 12  # 총 개월수
     tax_rate = TAX_RATES.get(sav_tax_type if not st.session_state.presentation_mode else st.session_state.get("sav_tax", "일반과세"), 0.154)
 
     # ── 계산 ──
     monthly_rate = sav_rate / 100 / 12
-    n = sav_months
     pre_tax_interest = sav_amount * monthly_rate * (n * (n + 1)) / 2
     tax_amount = pre_tax_interest * tax_rate
     post_tax_interest = pre_tax_interest - tax_amount
     total_paid = sav_amount * n
     maturity = total_paid + post_tax_interest
-
-    # 목표 금액 역산
-    goal_monthly = None
-    if use_goal:
-        sav_goal = st.session_state.get("sav_goal_amount", 5_000_000)
-        if sav_goal > 0 and n > 0:
-            denom = n + monthly_rate * (n * (n + 1)) / 2 * (1 - tax_rate)
-            if denom > 0:
-                goal_monthly = sav_goal / denom
 
     # ── 결과 ──
     with col_result:
@@ -296,105 +333,50 @@ def _render_installment():
 
         # KPI 카드
         html_block(f"""
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;">
-            <div style="flex:1; min-width:120px; background:#eff6ff; border-radius:12px; padding:14px; text-align:center; border:1px solid #bfdbfe;">
-                <div style="font-size:12px; color:#1d4ed8;">총 납입액</div>
-                <div style="font-size:20px; font-weight:700; color:#1e3a5f;">{f_w(round(total_paid))}원</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
+            <div style="background:#eff6ff; border-radius:12px; padding:14px 18px; border:1px solid #bfdbfe;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#1d4ed8; font-weight:600;">총 납입액</span>
+                    <span style="font-size:20px; font-weight:700; color:#1e3a5f;">{f_w(round(total_paid))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">월 {f_w(sav_amount)} x {n}개월 ({sav_years}년)</div>
             </div>
-            <div style="flex:1; min-width:120px; background:#f0f9ff; border-radius:12px; padding:14px; text-align:center; border:1px solid #bae6fd;">
-                <div style="font-size:12px; color:#0369a1;">세전 이자</div>
-                <div style="font-size:20px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</div>
+            <div style="background:#f0f9ff; border-radius:12px; padding:14px 18px; border:1px solid #bae6fd;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#0369a1; font-weight:600;">세전 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(sav_amount)} x ({sav_rate}%/12) x {n}x{n+1}/2</div>
             </div>
-            <div style="flex:1; min-width:120px; background:#f0fdf4; border-radius:12px; padding:14px; text-align:center; border:1px solid #bbf7d0;">
-                <div style="font-size:12px; color:#15803d;">세후 이자</div>
-                <div style="font-size:20px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</div>
+            <div style="background:#f0fdf4; border-radius:12px; padding:14px 18px; border:1px solid #bbf7d0;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#15803d; font-weight:600;">세후 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
             </div>
-            <div style="flex:1; min-width:120px; background:#fefce8; border-radius:12px; padding:14px; text-align:center; border:1px solid #fde68a;">
-                <div style="font-size:12px; color:#a16207;">만기 수령액</div>
-                <div style="font-size:22px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</div>
+            <div style="background:#fefce8; border-radius:12px; padding:14px 18px; border:1px solid #fde68a;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#a16207; font-weight:600;">만기 수령액</span>
+                    <span style="font-size:22px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</span>
+                </div>
+                <div style="font-size:11px; color:#64748b; margin-top:4px;">납입 {f_w(round(total_paid))} + 세후이자 {f_w(round(post_tax_interest))}</div>
             </div>
         </div>
         """)
 
-        # 목표 금액 역산 결과
-        if use_goal and goal_monthly is not None:
-            sav_goal = st.session_state.get("sav_goal_amount", 5_000_000)
-            html_block(f"""
-            <div style="background:#faf5ff; border-radius:12px; padding:16px; margin-bottom:16px; border:1px solid #e9d5ff;">
-                <div style="font-size:14px; font-weight:600; color:#7c3aed; margin-bottom:8px;">🎯 목표 금액 역산 결과</div>
-                <div style="font-size:13px; color:#6b21a8; line-height:1.8;">
-                    목표 금액 <b>{f_w(sav_goal)}원</b>을 달성하려면<br>
-                    연 {sav_rate}% · {n}개월 · {sav_tax_type} 기준<br>
-                    매월 <span style="font-size:20px; font-weight:800; color:#7c3aed;">{f_w(round(goal_monthly))}원</span>을 납입해야 합니다.
-                </div>
-            </div>
-            """)
-
-        # 누적 영역 차트
-        months_list = list(range(1, n + 1))
-        cum_paid = [sav_amount * m for m in months_list]
-        cum_interest = []
-        for m in months_list:
-            int_m = sav_amount * monthly_rate * (m * (m + 1)) / 2
-            cum_interest.append(int_m * (1 - tax_rate))
-
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=months_list,
-                y=cum_paid,
-                name="납입 원금",
-                fill="tozeroy",
-                mode="lines",
-                line=dict(color="#3b82f6", width=2),
-                fillcolor="rgba(59,130,246,0.3)",
-                hovertemplate="%{x}개월<br>납입원금: %{y:,.0f}원<extra></extra>",
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=months_list,
-                y=[p + i for p, i in zip(cum_paid, cum_interest)],
-                name="납입 + 세후이자",
-                fill="tonexty",
-                mode="lines",
-                line=dict(color="#22c55e", width=2),
-                fillcolor="rgba(34,197,94,0.3)",
-                hovertemplate="%{x}개월<br>납입+이자: %{y:,.0f}원<extra></extra>",
-            )
-        )
-        fig.update_layout(
-            xaxis_title="경과 개월",
-            yaxis_title="금액 (원)",
-            yaxis=dict(tickformat=","),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            margin=dict(t=30, b=40, l=60, r=20),
-            height=340,
-            hovermode="x unified",
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-        # 세금 상세
-        if tax_rate > 0:
-            html_block(f"""
-            <div style="background:#fef2f2; border-radius:10px; padding:12px 16px; margin-bottom:12px; border:1px solid #fecaca;">
-                <span style="font-size:13px; color:#991b1b;">💸 세금: <b>{f_w(round(tax_amount))}원</b> (세율 {tax_rate*100:.1f}%)</span>
-            </div>
-            """)
-
-        # 월별 이자 내역표
-        with st.expander("📋 월별 이자 내역표"):
+        # 월별 이자 내역표 (KPI 바로 아래)
+        with st.expander("📋 월별 이자 내역표", expanded=True):
             table_rows = ""
             running_paid = 0
             running_interest = 0
             for m in range(1, n + 1):
                 running_paid += sav_amount
-                # m번째 달에 납입한 금액의 이자 = 남은 개월수에 대한 이자
                 month_interest = sav_amount * monthly_rate * (n - m + 1)
                 running_interest += month_interest
                 post_running = running_interest * (1 - tax_rate)
                 balance = running_paid + post_running
-                table_rows += f"<tr><td>{m}</td><td>{f_w(sav_amount)}</td><td>{f_w(running_paid)}</td><td>{f_w(round(month_interest))}</td><td>{f_w(round(running_interest))}</td><td>{f_w(round(balance))}</td></tr>"
+                table_rows += f"<tr style='border-bottom:1px solid #f1f5f9;'><td style='text-align:center;'>{m}</td><td style='text-align:center;'>{f_w(sav_amount)}</td><td style='text-align:center;'>{f_w(running_paid)}</td><td style='text-align:center;'>{f_w(round(month_interest))}</td><td style='text-align:center;'>{f_w(round(running_interest))}</td><td style='text-align:center;'>{f_w(round(balance))}</td></tr>"
 
             html_block(f"""
             <div style="max-height:400px; overflow-y:auto;">
@@ -402,12 +384,13 @@ def _render_installment():
                 <thead style="position:sticky; top:0; background:#f1f5f9;">
                     <tr style="border-bottom:2px solid #cbd5e1;">
                         <th style="padding:8px 4px; text-align:center;">월</th>
-                        <th style="padding:8px 4px; text-align:right;">납입액</th>
-                        <th style="padding:8px 4px; text-align:right;">누적납입</th>
-                        <th style="padding:8px 4px; text-align:right;">월이자</th>
-                        <th style="padding:8px 4px; text-align:right;">누적이자</th>
-                        <th style="padding:8px 4px; text-align:right;">잔액</th>
+                        <th style="padding:8px 4px; text-align:center;">월 저축액</th>
+                        <th style="padding:8px 4px; text-align:center;">누적 저축액</th>
+                        <th style="padding:8px 4px; text-align:center;">월 이자</th>
+                        <th style="padding:8px 4px; text-align:center;">누적 이자</th>
+                        <th style="padding:8px 4px; text-align:center;">예상 수령액</th>
                     </tr>
+                    <tr><td colspan="6" style="text-align:right; font-size:10px; color:#94a3b8; padding:2px 4px;">단위: 원</td></tr>
                 </thead>
                 <tbody>
                     {table_rows}
@@ -416,36 +399,91 @@ def _render_installment():
             </div>
             """)
 
-        # 설명
+        # 계산 방법 안내
         with st.expander("📋 적금 계산 방법 안내"):
-            st.markdown(f"""
-**정기적금 단리 계산 공식**
+            _render_installment_guide(sav_amount, sav_rate, sav_years, n, pre_tax_interest, tax_amount, post_tax_interest, total_paid, maturity, tax_rate)
 
-적금은 매월 납입하므로, 각 회차 납입금에 대해 남은 기간만큼 이자가 발생합니다.
 
-```
-세전 이자 = 월납입액 × (연이율/12) × (개월수 × (개월수+1)) / 2
-         = {f_w(sav_amount)} × ({sav_rate}%/12) × ({n} × {n+1}) / 2
-         = {f_w(round(pre_tax_interest))}원
-```
+def _render_installment_guide(sav_amount, sav_rate, sav_years, n, pre_tax, tax_amt, post_tax, total_paid, maturity, tax_rate):
+    """적금 계산 방법 안내 — 전문 디자인"""
+    html_block(f"""
+    <div style="font-family:sans-serif;">
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">📐 정기적금 단리 계산 공식</div>
+            <div style="background:white; border-radius:8px; padding:14px; border:1px solid #e2e8f0;">
+                <div style="font-size:13px; color:#334155; line-height:2;">
+                    <div><b>세전 이자</b> = 월납입액 x (연이율 / 12) x 개월수 x (개월수 + 1) / 2</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(sav_amount)}원 x ({sav_rate}% / 12) x {n} x {n+1} / 2 = <b style="color:#0369a1;">{f_w(round(pre_tax))}원</b></div>
+                    <div style="margin-top:6px;"><b>세후 이자</b> = 세전 이자 - (세전 이자 x 세율(이자소득세 15.4%))</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(round(pre_tax))}원 - {f_w(round(tax_amt))}원 = <b style="color:#15803d;">{f_w(round(post_tax))}원</b></div>
+                    <div style="margin-top:6px;"><b>만기 수령액</b> = 총 납입액 + 세후 이자</div>
+                    <div style="color:#64748b; padding-left:20px;">= {f_w(round(total_paid))}원 + {f_w(round(post_tax))}원 = <b style="color:#78350f;">{f_w(round(maturity))}원</b></div>
+                </div>
+            </div>
+        </div>
 
-| 구분 | 금액 |
-|------|------|
-| 월 납입액 | {f_w(sav_amount)}원 |
-| 총 납입액 ({n}개월) | {f_w(total_paid)}원 |
-| 세전 이자 | {f_w(round(pre_tax_interest))}원 |
-| 이자 세금 ({tax_rate*100:.1f}%) | {f_w(round(tax_amount))}원 |
-| **세후 이자** | **{f_w(round(post_tax_interest))}원** |
-| **만기 수령액** | **{f_w(round(maturity))}원** |
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">💡 월별 이자 적용 원리</div>
+            <div style="background:white; border-radius:8px; padding:14px; border:1px solid #e2e8f0; font-size:13px; color:#334155; line-height:1.8;">
+                적금은 매월 납입하므로, <b>각 회차 납입금마다 남은 기간에 비례</b>하여 이자가 발생합니다.
+                <div style="margin-top:10px; padding:10px; background:#f0f9ff; border-radius:6px; font-size:12px;">
+                    <div>1회차 납입금 → <b>{n}개월</b>간 이자 발생</div>
+                    <div>2회차 납입금 → <b>{n-1}개월</b>간 이자 발생</div>
+                    <div style="color:#94a3b8;">...</div>
+                    <div>{n}회차 납입금 → <b>1개월</b>간 이자 발생</div>
+                </div>
+                <div style="margin-top:8px; color:#64748b; font-size:11px;">
+                    먼저 납입한 금액일수록 더 많은 이자를 받게 되며, 이를 모두 합산한 것이 세전 이자입니다.
+                </div>
+            </div>
+        </div>
 
-**월별 이자 적용 원리**
-- 1회차 납입금: {n}개월간 이자 발생
-- 2회차 납입금: {n-1}개월간 이자 발생
-- ...
-- {n}회차 납입금: 1개월간 이자 발생
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; margin-bottom:14px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">📊 상세 내역</div>
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">월 납입액</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{f_w(sav_amount)}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">연 이율</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{sav_rate}%</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">납입 기간</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1e293b;">{sav_years}년 ({n}개월)</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">총 납입액</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#1d4ed8;">{f_w(round(total_paid))}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">세전 이자</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#0369a1;">{f_w(round(pre_tax))}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">이자 과세 ({tax_rate*100:.1f}%)</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#ef4444;">-{f_w(round(tax_amt))}원</td>
+                </tr>
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                    <td style="padding:10px 8px; color:#64748b;">세후 이자</td>
+                    <td style="padding:10px 8px; text-align:right; font-weight:600; color:#15803d;">{f_w(round(post_tax))}원</td>
+                </tr>
+                <tr style="background:#fefce8;">
+                    <td style="padding:12px 8px; font-weight:700; color:#78350f;">만기 수령액</td>
+                    <td style="padding:12px 8px; text-align:right; font-weight:800; font-size:15px; color:#78350f;">{f_w(round(maturity))}원</td>
+                </tr>
+            </table>
+        </div>
 
-**과세 구분 안내**
-- **일반과세 (15.4%)**: 이자소득세 14% + 지방소득세 1.4%
-- **세금우대 (9.5%)**: 조합 등 세금우대 저축
-- **비과세 (0%)**: 비과세종합저축 대상자
-""")
+        <div style="background:#f8fafc; border-radius:10px; padding:16px; border:1px solid #e2e8f0;">
+            <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:10px;">💡 과세 구분 안내</div>
+            {_render_tax_info_cards()}
+            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.5;">
+                * 이자소득이 연 2,000만원을 초과하면 금융소득종합과세 대상이 될 수 있습니다.<br>
+                * 세금우대 저축은 조합원 가입이 필요하며, 1인 최대 3,000만원 한도입니다.<br>
+                * 비과세종합저축은 만 65세 이상·장애인 등 대상이며, 1인 최대 5,000만원 한도입니다.
+            </div>
+        </div>
+    </div>
+    """)
