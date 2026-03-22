@@ -32,6 +32,23 @@ st.markdown("""
     /* Exclude Material Icons/Symbols from font override */
     [class^="material-"], [class*=" material-"], .material-icons { font-family: 'Material Icons' !important; }
     .stApp { background-color: #f8fafc; }
+
+    /* Input field borders — 입력 영역 명확화 */
+    .stNumberInput input, .stTextInput input, .stTextArea textarea {
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 8px 12px !important;
+        background: #ffffff !important;
+    }
+    .stNumberInput input:focus, .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    }
+    .stSelectbox > div > div {
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        background: #ffffff !important;
+    }
     
     /* Sidebar */
     /* Sidebar */
