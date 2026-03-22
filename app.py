@@ -8,7 +8,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Global Styling (CSS)
+# 2. Google Analytics 4 (GA4)
+st.markdown("""
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NV114K1SQY"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-NV114K1SQY');
+    </script>
+""", unsafe_allow_html=True)
+
+# 3. Global Styling (CSS)
 
 
 st.markdown('<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" media="print" onload="this.media=\'all\'">', unsafe_allow_html=True)
