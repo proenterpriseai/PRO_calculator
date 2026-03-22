@@ -114,7 +114,7 @@ def render_dollar_insurance():
                 curr_rate_for_calc = st.session_state.get('curr_rate_val', 1430.0)
                 if total_premium_monthly > 0:
                     krw_monthly = int(total_premium_monthly * curr_rate_for_calc)
-                    st.markdown(f"<div style='background:#f0f9ff;border-left:3px solid #3b82f6;padding:8px 12px;border-radius:6px;margin-top:4px;'>"
+                    st.markdown(f"<div style='background:#f0f9ff;border-left:3px solid #3b82f6;padding:8px 12px;border-radius:6px;margin-top:4px;margin-bottom:12px;'>"
                                 f"<span style='font-size:12px;color:#64748b;'>원화 환산</span><br>"
                                 f"<span style='font-size:16px;font-weight:700;color:#1e3a8a;'>월 {krw_monthly:,}원</span>"
                                 f"<span style='font-size:11px;color:#94a3b8;'> (@{curr_rate_for_calc:,.0f}원)</span>"
