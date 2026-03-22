@@ -442,10 +442,19 @@ def render_dollar_insurance():
         # Fill placeholders
         drop_pct = ((1 - bep_rate/current_rate) * 100)
 
+        scenario_note = f"""<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:0.78rem;color:#64748b;line-height:1.6;'>
+            📌 <b>환율 시나리오 기준</b><br>
+            · <b>하락(비관) {rate_low_str}원</b>: 글로벌 경기침체·달러 약세 시나리오<br>
+            · <b>보합(중립) {rate_mid_str}원</b>: 현재 환율 수준 유지 시나리오<br>
+            · <b>상승(낙관) {rate_high_str}원</b>: 달러 강세·원화 약세 시나리오<br>
+            위 환율은 입력값 기준이며, 환율 시나리오에서 직접 조정할 수 있습니다.
+        </div>"""
+
         if not st.session_state.presentation_mode:
             with _ph_scenario.container():
                 st.markdown("##### 💱 시나리오별 예상 환급금 (10년 시점)")
                 st.markdown(scenario_html, unsafe_allow_html=True)
+                st.markdown(scenario_note, unsafe_allow_html=True)
             with _ph_bep.container():
                 with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기", expanded=True):
                     html_block(f"""
@@ -464,6 +473,7 @@ def render_dollar_insurance():
         else:
             st.subheader("💱 환율 시나리오별 예상 환급금 (10년 시점)")
             st.markdown(scenario_html, unsafe_allow_html=True)
+            st.markdown(scenario_note, unsafe_allow_html=True)
             with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기", expanded=True):
                 html_block(f"""
                 <div class='logic-annotation'>
