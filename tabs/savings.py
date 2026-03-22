@@ -66,7 +66,7 @@ def _render_deposit():
                 dep_rate = st.number_input(
                     "연 이율 (%)",
                     min_value=0.01,
-                    max_value=20.0,
+                    max_value=100.0,
                     value=st.session_state.get("dep_rate", 3.5),
                     step=0.01,
                     format="%.2f",
@@ -270,7 +270,7 @@ def _render_installment():
                 sav_rate = st.number_input(
                     "연 이율 (%)",
                     min_value=0.01,
-                    max_value=20.0,
+                    max_value=100.0,
                     value=st.session_state.get("sav_rate", 3.5),
                     step=0.01,
                     format="%.2f",

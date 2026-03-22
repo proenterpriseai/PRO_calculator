@@ -25,13 +25,10 @@ def render_retirement():
                 client_name = c_name.text_input("고객 성함", "", key="ret_name")
                 current_age = c_age.number_input("현재 나이", min_value=20, max_value=100, value=20, key="ret_age")
                 goal_p = comma_int_input("희망 월 생활비 (현재가치/원)", st.session_state.ret_goal_p, "ret_goal_p")
-                # 목표 은퇴 자산 표시 placeholder (계산 후 채워짐)
-                _ph_target_asset = st.empty()
     else:
         client_name = st.session_state.get('ret_name', "")
         current_age = st.session_state.get('ret_age', 20)
         goal_p = st.session_state.get('ret_goal_p', 3_000_000)
-        _ph_target_asset = None
 
     display_name = client_name.strip() if client_name.strip() else "고객"
 
@@ -85,13 +82,13 @@ def render_retirement():
                 with c_a:
                     st.markdown("물가상승률(%)")
                     c_a1, c_a2 = st.columns([2, 1])
-                    inf = c_a1.slider("물가상승률", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=make_sync_callback('inf_sl', 'inf_num'))
-                    inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=50.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=make_sync_callback('inf_num', 'inf_sl'))
+                    inf = c_a1.slider("물가상승률", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=make_sync_callback('inf_sl', 'inf_num'))
+                    inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=make_sync_callback('inf_num', 'inf_sl'))
 
                 with c_b:
                     st.markdown("투자수익률(%)")
                     c_b1, c_b2 = st.columns([2, 1])
-                    yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=30.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=make_sync_callback('yield_sl', 'yield_num'))
+                    yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=make_sync_callback('yield_sl', 'yield_num'))
                     yield_r = c_b2.number_input("투자수익률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=make_sync_callback('yield_num', 'yield_sl'))
                     if yield_r > 20:
                         st.warning(f"⚠️ 연 {yield_r:.1f}%는 매우 높은 수익률입니다. 실제 시장 성과와 일치하는지 확인하세요.")
@@ -154,14 +151,7 @@ def render_retirement():
     else:
         monthly_save = round(v_pay_end_needed * monthly_yield / ((1 + monthly_yield) ** n_months_pay - 1)) if n_months_pay > 0 else 0
 
-    # 목표 은퇴 자산 표시 (입력 영역 placeholder에 채우기)
-    if _ph_target_asset is not None:
-        with _ph_target_asset.container():
-            st.markdown(f"<div style='background:#f0f9ff;border-left:3px solid #3b82f6;padding:10px 14px;border-radius:6px;margin-top:4px;margin-bottom:8px;'>"
-                        f"<span style='font-size:12px;color:#64748b;'>목표 은퇴 자산 (자동 계산)</span><br>"
-                        f"<span style='font-size:18px;font-weight:700;color:#1e3a8a;'>{f_w(lump_sum_need)}원</span>"
-                        f"<span style='font-size:11px;color:#94a3b8;'> ({retire_age}세~{yy_life}세, {y_d}년간)</span>"
-                        f"</div>", unsafe_allow_html=True)
+    # 역산 엔진 및 목표 은퇴자산 표시 제거됨 (v=20260321)
 
 
     with col_result:

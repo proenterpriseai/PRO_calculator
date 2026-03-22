@@ -20,7 +20,7 @@ def render_loan_planner():
             card_header("💰 대출 조건")
             with st.container(border=True):
                 loan_amount = comma_int_input("대출 원금 (원)", 0, "loan_amt")
-                loan_rate = st.slider("연 이자율 (%)", 1.0, 15.0, 4.0, step=0.1, key="loan_rate")
+                loan_rate = st.slider("연 이자율 (%)", 1.0, 100.0, 4.0, step=0.1, key="loan_rate")
                 loan_years = st.slider("대출 기간 (년)", 1, 40, 30, key="loan_years")
     else:
         loan_amount = st.session_state.get('loan_amt', 300_000_000)

@@ -61,13 +61,13 @@ def render_target_fund():
 
                 st.markdown("적금 금리(%)")
                 cs1, cs2 = st.columns([2, 1])
-                with cs1: top_sav_rate = st.slider("적금 금리", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_sl', 'tf_sav_rate_num'))
-                with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_num', 'tf_sav_rate_sl'))
+                with cs1: top_sav_rate = st.slider("적금 금리", min_value=0.0, max_value=100.0, step=0.1, key='tf_sav_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_sl', 'tf_sav_rate_num'))
+                with cs2: top_sav_rate = st.number_input("적금 금리 입력", min_value=0.0, max_value=100.0, step=0.1, key='tf_sav_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_sav_rate_num', 'tf_sav_rate_sl'))
 
                 st.markdown("기대 수익률(%)")
                 c3, c4 = st.columns([2, 1])
-                with c3: rate = st.slider("기대 수익률", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_sl', 'tf_rate_num'))
-                with c4: rate = st.number_input("수익률 입력", min_value=0.0, max_value=20.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_num', 'tf_rate_sl'))
+                with c3: rate = st.slider("기대 수익률", min_value=0.0, max_value=100.0, step=0.1, key='tf_rate_sl', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_sl', 'tf_rate_num'))
+                with c4: rate = st.number_input("수익률 입력", min_value=0.0, max_value=100.0, step=0.1, key='tf_rate_num', label_visibility="collapsed", on_change=make_sync_callback('tf_rate_num', 'tf_rate_sl'))
             
             st.markdown("---")
             # Removed 세후 수익률 적용

@@ -44,7 +44,7 @@ def render_jeonwolse():
                                   on_change=make_sync_callback('jw_rate_num', 'jw_rate_sl'))
                 conversion_rate = st.session_state.jw_rate_sl
                 if 'jw_invest_rate' not in st.session_state: st.session_state.jw_invest_rate = 3.5
-                invest_rate = st.number_input("투자 기대수익률 (%)", min_value=0.0, max_value=20.0, step=0.5, key="jw_invest_rate",
+                invest_rate = st.number_input("투자 기대수익률 (%)", min_value=0.0, max_value=100.0, step=0.5, key="jw_invest_rate",
                     help="전세 보증금 또는 여유 자금을 투자할 경우의 연간 기대수익률입니다. 전환율과 비교하여 유불리를 판정합니다.")
                 if conversion_rate > 4.50:
                     _has_jw_input = (st.session_state.get('jw_jeonse', 0) > 0 or
