@@ -142,7 +142,7 @@ def render_jeonwolse():
             fig2.update_layout(title="전환율별 예상 월세", xaxis_title="전환율 (%)", yaxis_title="월세 (원)",
                                   template='plotly_white', height=300)
         else:
-            jeonse_values = [wolse_deposit + int(monthly_wolse * 12 / (r/100)) for r in rates]
+            jeonse_values = [wolse_deposit + int(monthly_wolse * 12 / (r/100)) if r > 0 else wolse_deposit for r in rates]
             fig2 = go.Figure(data=[go.Scatter(x=rates, y=jeonse_values, mode='lines+markers',
                                               line=dict(color='#1e3a8a', width=3))])
             fig2.add_vline(x=conversion_rate, line_dash="dash", line_color="#ef4444",
