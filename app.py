@@ -33,18 +33,34 @@ st.markdown("""
     [class^="material-"], [class*=" material-"], .material-icons { font-family: 'Material Icons' !important; }
     .stApp { background-color: #f8fafc; }
 
-    /* Input field borders — 입력 영역 명확화 */
-    .stNumberInput input, .stTextInput input, .stTextArea textarea {
+    /* Input field borders — 모든 입력 영역 통일 */
+    .stNumberInput > div, .stTextInput > div, .stTextArea > div {
         border: 1.5px solid #cbd5e1 !important;
         border-radius: 8px !important;
-        padding: 8px 12px !important;
         background: #ffffff !important;
+        overflow: hidden !important;
     }
-    .stNumberInput input:focus, .stTextInput input:focus, .stTextArea textarea:focus {
+    .stNumberInput > div:focus-within, .stTextInput > div:focus-within, .stTextArea > div:focus-within {
         border-color: #3b82f6 !important;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
     }
+    .stNumberInput input, .stTextInput input, .stTextArea textarea {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        padding: 8px 12px !important;
+    }
     .stSelectbox > div > div {
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        background: #ffffff !important;
+    }
+    .stSelectbox > div > div:focus-within {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    }
+    /* Slider 옆 숫자 입력도 동일 스타일 */
+    [data-testid="stSlider"] .stNumberInput > div {
         border: 1.5px solid #cbd5e1 !important;
         border-radius: 8px !important;
         background: #ffffff !important;
