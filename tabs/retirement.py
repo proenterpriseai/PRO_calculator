@@ -43,8 +43,8 @@ def render_retirement():
             if 'pay_years_num' not in st.session_state: st.session_state.pay_years_num = 10
             if 'ret_age_sl' not in st.session_state: st.session_state.ret_age_sl = 65
             if 'ret_age_num' not in st.session_state: st.session_state.ret_age_num = 65
-            if 'life_age_sl' not in st.session_state: st.session_state.life_age_sl = 90
-            if 'life_age_num' not in st.session_state: st.session_state.life_age_num = 90
+            if 'life_age_sl' not in st.session_state: st.session_state.life_age_sl = 100
+            if 'life_age_num' not in st.session_state: st.session_state.life_age_num = 100
 
             # UI Rendering (Reordered)
             y_s_limit = max(1, st.session_state.ret_age_sl - current_age)
@@ -95,7 +95,7 @@ def render_retirement():
 
     # Variables extraction
     retire_age = st.session_state.ret_age_sl if 'ret_age_sl' in st.session_state else 65
-    yy_life = st.session_state.life_age_sl if 'life_age_sl' in st.session_state else 90
+    yy_life = st.session_state.life_age_sl if 'life_age_sl' in st.session_state else 100
     inf = st.session_state.inf_sl if 'inf_sl' in st.session_state else 3.0
     yield_r = st.session_state.yield_sl if 'yield_sl' in st.session_state else 6.0
 

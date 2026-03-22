@@ -422,21 +422,21 @@ def render_dollar_insurance():
         scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#475569;'>하락(비관)</div>"
         scenario_html += "<div style='font-size:0.75rem; color:#64748b; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_low_str + "원/$</div>"
         scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#334155; margin-bottom:4px;'>" + val_low_str + "만원</div>"
-        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_low + ";'>" + profit_low_str + "</div></div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_low + ";'>" + f"{profit_low_num:+.1f}%<br>({f_w(p_low/10000)}만)" + "</div></div>"
 
         scenario_html += "<div style='flex:1; min-width:120px; padding:14px; border-radius:14px; text-align:center; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); background:linear-gradient(to bottom right,#eff6ff,#dbeafe); border:1px solid #60a5fa;'>"
         scenario_html += "<div style='font-size:1.6rem; margin-bottom:6px;'>☁️</div>"
         scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#1d4ed8;'>보합(중립)</div>"
         scenario_html += "<div style='font-size:0.75rem; color:#3b82f6; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_mid_str + "원/$</div>"
         scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#1e40af; margin-bottom:4px;'>" + val_mid_str + "만원</div>"
-        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_mid + ";'>" + profit_mid_str + "</div></div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_mid + ";'>" + f"{profit_mid_num:+.1f}%<br>({f_w(p_mid/10000)}만)" + "</div></div>"
 
         scenario_html += "<div style='flex:1; min-width:120px; padding:14px; border-radius:14px; text-align:center; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); background:linear-gradient(to bottom right,#fff1f2,#fecdd3); border:1px solid #f43f5e;'>"
         scenario_html += "<div style='font-size:1.6rem; margin-bottom:6px;'>☀️</div>"
         scenario_html += "<div style='font-size:0.85rem; font-weight:bold; color:#be123c;'>상승(낙관)</div>"
         scenario_html += "<div style='font-size:0.75rem; color:#e11d48; margin-bottom:8px; font-family:Consolas,monospace;'>@" + rate_high_str + "원/$</div>"
         scenario_html += "<div style='font-size:1.1rem; font-weight:800; color:#9f1239; margin-bottom:4px;'>" + val_high_str + "만원</div>"
-        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_high + ";'>" + profit_high_str + "</div></div>"
+        scenario_html += "<div style='font-size:0.8rem; font-weight:700; background:rgba(255,255,255,0.8); padding:3px 6px; border-radius:5px; display:inline-block; color:" + color_high + ";'>" + f"{profit_high_num:+.1f}%<br>({f_w(p_high/10000)}만)" + "</div></div>"
         scenario_html += "</div>"
 
         # Fill placeholders
@@ -444,7 +444,7 @@ def render_dollar_insurance():
 
         if not st.session_state.presentation_mode:
             with _ph_scenario.container():
-                st.markdown("##### 💱 시나리오별 예상 환급금 (10년)")
+                st.markdown("##### 💱 시나리오별 예상 환급금 (10년 시점)")
                 st.markdown(scenario_html, unsafe_allow_html=True)
             with _ph_bep.container():
                 with st.expander("💡 손익분기 환율(BEP) 산출 근거 보기", expanded=True):
