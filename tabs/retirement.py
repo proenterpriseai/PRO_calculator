@@ -23,11 +23,11 @@ def render_retirement():
             with st.container(border=True):
                 c_name, c_age = st.columns([1.5, 1])
                 client_name = c_name.text_input("고객 성함", "", key="ret_name")
-                current_age = c_age.number_input("현재 나이", min_value=20, max_value=100, value=20, key="ret_age")
+                current_age = c_age.number_input("현재 나이", min_value=20, max_value=100, value=35, key="ret_age")
                 goal_p = comma_int_input("희망 월 생활비 (현재가치/원)", st.session_state.ret_goal_p, "ret_goal_p")
     else:
         client_name = st.session_state.get('ret_name', "")
-        current_age = st.session_state.get('ret_age', 20)
+        current_age = st.session_state.get('ret_age', 35)
         goal_p = st.session_state.get('ret_goal_p', 3_000_000)
 
     display_name = client_name.strip() if client_name.strip() else "고객"
