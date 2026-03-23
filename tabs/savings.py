@@ -126,26 +126,26 @@ def _render_deposit():
         # KPI 카드
         html_block(f"""
         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
-            <div style="background:#f0f9ff; border-radius:12px; padding:14px 18px; border:1px solid #bae6fd;">
+            <div style="background:linear-gradient(135deg,#0c4a6e,#0ea5e9); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(14,165,233,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#0369a1; font-weight:600;">세전 이자</span>
-                    <span style="font-size:20px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">세전 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#ffffff;">{f_w(round(pre_tax_interest))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(dep_amount)} x {dep_rate}% x {dep_years}년</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">{f_w(dep_amount)} x {dep_rate}% x {dep_years}년</div>
             </div>
-            <div style="background:#f0fdf4; border-radius:12px; padding:14px 18px; border:1px solid #bbf7d0;">
+            <div style="background:linear-gradient(135deg,#14532d,#22c55e); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(34,197,94,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#15803d; font-weight:600;">세후 이자</span>
-                    <span style="font-size:20px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">세후 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#ffffff;">{f_w(round(post_tax_interest))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
             </div>
-            <div style="background:#fefce8; border-radius:12px; padding:14px 18px; border:1px solid #fde68a;">
+            <div style="background:linear-gradient(135deg,#78350f,#f59e0b); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(245,158,11,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#a16207; font-weight:600;">만기 수령액</span>
-                    <span style="font-size:22px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">만기 수령액</span>
+                    <span style="font-size:22px; font-weight:800; color:#ffffff;">{f_w(round(maturity))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">원금 {f_w(dep_amount)} + 세후이자 {f_w(round(post_tax_interest))}</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">원금 {f_w(dep_amount)} + 세후이자 {f_w(round(post_tax_interest))}</div>
             </div>
         </div>
         """)
@@ -334,33 +334,33 @@ def _render_installment():
         # KPI 카드
         html_block(f"""
         <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:18px;">
-            <div style="background:#eff6ff; border-radius:12px; padding:14px 18px; border:1px solid #bfdbfe;">
+            <div style="background:linear-gradient(135deg,#1e3a5f,#3b82f6); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(59,130,246,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#1d4ed8; font-weight:600;">총 납입액</span>
-                    <span style="font-size:20px; font-weight:700; color:#1e3a5f;">{f_w(round(total_paid))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">총 납입액</span>
+                    <span style="font-size:20px; font-weight:700; color:#ffffff;">{f_w(round(total_paid))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">월 {f_w(sav_amount)} x {n}개월 ({sav_years}년)</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">월 {f_w(sav_amount)} x {n}개월 ({sav_years}년)</div>
             </div>
-            <div style="background:#f0f9ff; border-radius:12px; padding:14px 18px; border:1px solid #bae6fd;">
+            <div style="background:linear-gradient(135deg,#0c4a6e,#0ea5e9); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(14,165,233,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#0369a1; font-weight:600;">세전 이자</span>
-                    <span style="font-size:20px; font-weight:700; color:#0c4a6e;">{f_w(round(pre_tax_interest))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">세전 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#ffffff;">{f_w(round(pre_tax_interest))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(sav_amount)} x ({sav_rate}%/12) x {n}x{n+1}/2</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">{f_w(sav_amount)} x ({sav_rate}%/12) x {n}x{n+1}/2</div>
             </div>
-            <div style="background:#f0fdf4; border-radius:12px; padding:14px 18px; border:1px solid #bbf7d0;">
+            <div style="background:linear-gradient(135deg,#14532d,#22c55e); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(34,197,94,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#15803d; font-weight:600;">세후 이자</span>
-                    <span style="font-size:20px; font-weight:700; color:#14532d;">{f_w(round(post_tax_interest))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">세후 이자</span>
+                    <span style="font-size:20px; font-weight:700; color:#ffffff;">{f_w(round(post_tax_interest))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">{f_w(round(pre_tax_interest))} - 세금 {f_w(round(tax_amount))} ({tax_rate*100:.1f}%)</div>
             </div>
-            <div style="background:#fefce8; border-radius:12px; padding:14px 18px; border:1px solid #fde68a;">
+            <div style="background:linear-gradient(135deg,#78350f,#f59e0b); border-radius:12px; padding:14px 18px; box-shadow:0 4px 16px rgba(245,158,11,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; color:#a16207; font-weight:600;">만기 수령액</span>
-                    <span style="font-size:22px; font-weight:800; color:#78350f;">{f_w(round(maturity))}원</span>
+                    <span style="font-size:14px; color:rgba(255,255,255,0.85); font-weight:600;">만기 수령액</span>
+                    <span style="font-size:22px; font-weight:800; color:#ffffff;">{f_w(round(maturity))}원</span>
                 </div>
-                <div style="font-size:11px; color:#64748b; margin-top:4px;">납입 {f_w(round(total_paid))} + 세후이자 {f_w(round(post_tax_interest))}</div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:4px;">납입 {f_w(round(total_paid))} + 세후이자 {f_w(round(post_tax_interest))}</div>
             </div>
         </div>
         """)
