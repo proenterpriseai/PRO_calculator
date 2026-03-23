@@ -124,8 +124,8 @@ def render_target_fund():
         
         # HTML 카드 스타일을 위한 공통 래퍼 함수
         def draw_kpi_card(title, main_val, sub_label, sub_val, is_result1=True):
-            bg_color = "#f0fdf4" if is_result1 else "#eff6ff"
-            border_color = "#bbf7d0" if is_result1 else "#bfdbfe"
+            bg_color = "#dcfce7" if is_result1 else "#dbeafe"
+            border_color = "#86efac" if is_result1 else "#93c5fd"
             icon = "🎯" if is_result1 else "💰"
             return f"""
             <div style='background-color: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); height: 100%; margin-bottom: 12px;'>

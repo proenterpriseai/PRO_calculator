@@ -81,13 +81,13 @@ def render_retirement():
                 c_a, c_b = st.columns(2)
                 with c_a:
                     st.markdown("물가상승률(%)")
-                    c_a1, c_a2 = st.columns([2, 1])
+                    c_a1, c_a2 = st.columns([3, 2])
                     inf = c_a1.slider("물가상승률", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='inf_sl', on_change=make_sync_callback('inf_sl', 'inf_num'))
                     inf = c_a2.number_input("물가상승률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='inf_num', on_change=make_sync_callback('inf_num', 'inf_sl'))
 
                 with c_b:
                     st.markdown("투자수익률(%)")
-                    c_b1, c_b2 = st.columns([2, 1])
+                    c_b1, c_b2 = st.columns([3, 2])
                     yield_r = c_b1.slider("투자수익률", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_sl', on_change=make_sync_callback('yield_sl', 'yield_num'))
                     yield_r = c_b2.number_input("투자수익률 입력", min_value=0.0, max_value=100.0, step=0.1, label_visibility="collapsed", key='yield_num', on_change=make_sync_callback('yield_num', 'yield_sl'))
                     if yield_r > 20:
