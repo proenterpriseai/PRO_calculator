@@ -180,7 +180,9 @@ def render_dollar_insurance():
                                 st.session_state.rate_mid_val = fetched_val
                                 st.session_state['rate_mid_val'] = fetched_val
                                 
-                                low_val = round(fetched_val * 0.9, -1)
+                                _fetch_hist = [1390, 1364, 1306, 1292, 1144, 1180, 1166, 1100, 1131, 1161]
+                                _fetch_all = [int(fetched_val)] + _fetch_hist
+                                low_val = float(int(sum(_fetch_all) / len(_fetch_all)))  # 10년 평균
                                 st.session_state.rate_low_val = low_val
                                 st.session_state['rate_low_val'] = low_val
                                 
@@ -191,7 +193,8 @@ def render_dollar_insurance():
                                 # Auto-calc average rate based on fetched rate
                                 current_pay_period = st.session_state.get('di_period', 5)
                                 weight_curr = max(0, (20 - current_pay_period) / 20)
-                                est_avg = (fetched_val * weight_curr) + (1250.0 * (1 - weight_curr))
+                                _ltm = float(int(sum(_fetch_all) / len(_fetch_all)))
+                                est_avg = (fetched_val * weight_curr) + (_ltm * (1 - weight_curr))
                                 st.session_state.avg_rate_val = round(est_avg, 1)
                                 
                                 st.session_state['exchange_rate_fetched_at'] = time.strftime('%H:%M:%S')
@@ -206,13 +209,16 @@ def render_dollar_insurance():
                     if 'exchange_rate_fetched_at' in st.session_state:
                         st.markdown(f"<div style='font-size:0.7rem; color:#94a3b8; margin-top:-8px;'>수신: {st.session_state['exchange_rate_fetched_at']}</div>", unsafe_allow_html=True)
     
-                # Average Rate Logic
-                long_term_mean = 1250.0
-                
+                # Average Rate Logic — 10년 평균 환율 기반
+                _hist_rates_only = [1390, 1364, 1306, 1292, 1144, 1180, 1166, 1100, 1131, 1161]
+                _all_rates = [int(current_rate)] + _hist_rates_only
+                rate_avg = int(sum(_all_rates) / len(_all_rates))
+                long_term_mean = float(rate_avg)
+
                 # Auto Calc Button Removed (Now synced with Real-time Fetch)
-                
+
                 if 'avg_rate_val' not in st.session_state:
-                    st.session_state.avg_rate_val = 1300.0
+                    st.session_state.avg_rate_val = float(rate_avg)
     
                 avg_pay_rate = st.number_input(
                     "🤖 AI 예측 납입 기간 평균 환율", 
@@ -221,10 +227,10 @@ def render_dollar_insurance():
                     help=f"매월 적립식 납입 시 '코스트 에버리지' 효과가 발생합니다. 실시간 수신 시 AI가 (장기 평균 {long_term_mean}원과 현재 환율을 납입 기간에 비례해 가중 평균하여) 현실적인 평단가를 자동 산출합니다."
                 )
                 
-                # Initialize Scenario Session States if not valid
-                if 'rate_low_val' not in st.session_state: st.session_state.rate_low_val = 1100.0
-                if 'rate_mid_val' not in st.session_state: st.session_state.rate_mid_val = 1350.0
-                if 'rate_high_val' not in st.session_state: st.session_state.rate_high_val = 1550.0
+                # Initialize Scenario Session States — 10년 데이터 연동
+                if 'rate_low_val' not in st.session_state: st.session_state.rate_low_val = float(rate_avg)
+                if 'rate_mid_val' not in st.session_state: st.session_state.rate_mid_val = float(int(current_rate))
+                if 'rate_high_val' not in st.session_state: st.session_state.rate_high_val = round(float(current_rate) * 1.1, -1)
     
                 st.caption("인출(해지) 시점 예상 환율 범위")
                 c_r1, c_r2, c_r3 = st.columns(3)
@@ -252,9 +258,12 @@ def render_dollar_insurance():
         # Rate Variables
         current_rate = st.session_state.get('input_curr_rate', 1430.0)
         avg_pay_rate = st.session_state.avg_rate_val if 'avg_rate_val' in st.session_state else 1300.0
-        rate_low = st.session_state.rate_low_val if 'rate_low_val' in st.session_state else 1100.0
-        rate_mid = st.session_state.rate_mid_val if 'rate_mid_val' in st.session_state else 1350.0
-        rate_high = st.session_state.rate_high_val if 'rate_high_val' in st.session_state else 1550.0
+        _p_hist = [1390, 1364, 1306, 1292, 1144, 1180, 1166, 1100, 1131, 1161]
+        _p_all = [int(current_rate)] + _p_hist
+        _p_avg = float(int(sum(_p_all) / len(_p_all)))
+        rate_low = st.session_state.rate_low_val if 'rate_low_val' in st.session_state else _p_avg
+        rate_mid = st.session_state.rate_mid_val if 'rate_mid_val' in st.session_state else float(int(current_rate))
+        rate_high = st.session_state.rate_high_val if 'rate_high_val' in st.session_state else round(float(current_rate) * 1.1, -1)
         commission_rate = 0.0
 
     # Logic Calculation
@@ -444,9 +453,9 @@ def render_dollar_insurance():
 
         scenario_note = f"""<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-top:4px;font-size:0.78rem;color:#64748b;line-height:1.6;'>
             📌 <b>환율 시나리오 기준</b><br>
-            · <b>하락(비관) {rate_low_str}원</b>: 글로벌 경기침체·달러 약세 시나리오<br>
+            · <b>하락(비관) {rate_low_str}원</b>: 10년 평균 환율 기준 (평균 회귀 시나리오)<br>
             · <b>보합(중립) {rate_mid_str}원</b>: 현재 환율 수준 유지 시나리오<br>
-            · <b>상승(낙관) {rate_high_str}원</b>: 달러 강세·원화 약세 시나리오<br>
+            · <b>상승(낙관) {rate_high_str}원</b>: 현재 환율 10% 상승 시나리오<br>
             위 환율은 입력값 기준이며, 환율 시나리오에서 직접 조정할 수 있습니다.
         </div>"""
 
@@ -548,12 +557,11 @@ def render_dollar_insurance():
     with st.expander("📈 USD/KRW 환율 흐름 한눈에 보기 (최근 10년)", expanded=False):
         # 시뮬레이션 데이터 (최근 순 정렬: 2026 -> 2016)
         years_hist = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016]
-        # 데이터도 최근 순으로 (2026이 첫번째)
         avg_rates = [int(current_rate), 1390, 1364, 1306, 1292, 1144, 1180, 1166, 1100, 1131, 1161]
-        
+
         rate_max = max(avg_rates)
         rate_min = min(avg_rates)
-        rate_avg = int(sum(avg_rates) / len(avg_rates))
+        rate_avg_chart = int(sum(avg_rates) / len(avg_rates))
         rate_now = int(current_rate)
         max_year = years_hist[avg_rates.index(rate_max)]
         min_year = years_hist[avg_rates.index(rate_min)]
@@ -563,16 +571,16 @@ def render_dollar_insurance():
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("📉 최저 환율", f"{rate_min:,}원", f"{min_year}년")
         m2.metric("📈 최고 환율", f"{rate_max:,}원", f"{max_year}년")
-        m3.metric("📊 10년 평균", f"{rate_avg:,}원", f"{len(avg_rates)}년 평균")
-        m4.metric("📍 현재 기준", f"{rate_now:,}원", f"평균 대비 {'+' if rate_now > rate_avg else ''}{rate_now - rate_avg:,}원")
+        m3.metric("📊 10년 평균", f"{rate_avg_chart:,}원", f"{len(avg_rates)}년 평균")
+        m4.metric("📍 현재 기준", f"{rate_now:,}원", f"평균 대비 {'+' if rate_now > rate_avg_chart else ''}{rate_now - rate_avg_chart:,}원")
         
         st.divider()
         
         # 흐름 해석 메시지
-        if rate_now > rate_avg:
-            trend_msg = f"현재 환율({rate_now:,}원)은 10년 평균({rate_avg:,}원)보다 **{rate_now - rate_avg:,}원 높은 수준**입니다. 달러 자산의 원화 환산 가치가 높아 **환차익이 유리**한 시점입니다."
+        if rate_now > rate_avg_chart:
+            trend_msg = f"현재 환율({rate_now:,}원)은 10년 평균({rate_avg_chart:,}원)보다 **{rate_now - rate_avg_chart:,}원 높은 수준**입니다. 달러 자산의 원화 환산 가치가 높아 **환차익이 유리**한 시점입니다."
         else:
-            trend_msg = f"현재 환율({rate_now:,}원)은 10년 평균({rate_avg:,}원)보다 **{rate_avg - rate_now:,}원 낮은 수준**입니다. 달러 매입 단가를 낮출 수 있는 저점 구간이므로 **적립 확대를 고려**해볼 만합니다."
+            trend_msg = f"현재 환율({rate_now:,}원)은 10년 평균({rate_avg_chart:,}원)보다 **{rate_avg_chart - rate_now:,}원 낮은 수준**입니다. 달러 매입 단가를 낮출 수 있는 저점 구간이므로 **적립 확대를 고려**해볼 만합니다."
         
         st.info(f"💡 {trend_msg}")
         
@@ -580,9 +588,9 @@ def render_dollar_insurance():
         fig_rate = go.Figure()
         
         # 10년 평균 영역
-        fig_rate.add_hrect(y0=rate_avg - 50, y1=rate_avg + 50,
+        fig_rate.add_hrect(y0=rate_avg_chart - 50, y1=rate_avg_chart + 50,
                           fillcolor="rgba(59, 130, 246, 0.08)", line_width=0,
-                          annotation_text=f"평균 구간 ({rate_avg-50:,}~{rate_avg+50:,})")
+                          annotation_text=f"평균 구간 ({rate_avg_chart-50:,}~{rate_avg_chart+50:,})")
         
         # 메인 라인 (Plotly는 X축 기준 정렬하므로 데이터 순서 상관없이 시계열 좌->우로 그려짐. 표와 일치시키기 위해 데이터는 역순 유지)
         fig_rate.add_trace(go.Scatter(
