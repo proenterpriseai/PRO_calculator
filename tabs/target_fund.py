@@ -124,16 +124,16 @@ def render_target_fund():
         
         # HTML 카드 스타일을 위한 공통 래퍼 함수
         def draw_kpi_card(title, main_val, sub_label, sub_val, is_result1=True):
-            bg_color = "#dcfce7" if is_result1 else "#dbeafe"
-            border_color = "#86efac" if is_result1 else "#93c5fd"
             icon = "🎯" if is_result1 else "💰"
+            grad = "linear-gradient(135deg, #15803d, #22c55e)" if is_result1 else "linear-gradient(135deg, #1e40af, #3b82f6)"
+            shadow = "0 4px 16px rgba(34,197,94,0.3)" if is_result1 else "0 4px 16px rgba(59,130,246,0.3)"
             return f"""
             <div style='background-color: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); height: 100%; margin-bottom: 12px;'>
                 <div style='color: #64748b; font-size: 0.95rem; font-weight: 600; margin-bottom: 8px;'><span style='margin-right:4px;'>{icon}</span> {title}</div>
                 <div style='color: #1e293b; font-size: 1.8rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;'>{main_val} <span style='font-size: 1.1rem; color: #475569; font-weight:600;'>원</span></div>
-                <div style='background-color: {bg_color}; border: 1px solid {border_color}; padding: 12px 14px; border-radius: 8px; color: #334155; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center;'>
-                    <span style='font-weight: 600; color: #475569;'>{sub_label}</span>
-                    <span style='font-weight: 700; color: #1e3a8a;'>{sub_val}원</span>
+                <div style='background: {grad}; padding: 12px 14px; border-radius: 10px; font-size: 0.92rem; display: flex; justify-content: space-between; align-items: center; box-shadow: {shadow};'>
+                    <span style='font-weight: 600; color: rgba(255,255,255,0.85);'>{sub_label}</span>
+                    <span style='font-weight: 800; color: #ffffff; font-size: 1rem;'>{sub_val}원</span>
                 </div>
             </div>
             """
