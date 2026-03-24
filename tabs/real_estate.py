@@ -19,7 +19,7 @@ def render_real_estate():
         if k not in st.session_state:
             st.session_state[k] = v
 
-    render_title_with_reset("🏠 부동산 통합 시뮬레이터", ["acq_", "hold_", "yang_", "result_acq", "result_hold", "result_yang", "result_prop", "result_jongbu", "result_local"], "reset_real_estate", default_states=[RealEstateState()])
+    render_title_with_reset("🏠 부동산 세금 통합 분석", ["acq_", "hold_", "yang_", "result_acq", "result_hold", "result_yang", "result_prop", "result_jongbu", "result_local"], "reset_real_estate", default_states=[RealEstateState()])
     st.markdown("취득, 보유, 양도 전 단계에 걸친 세금을 정밀하게 분석하고 절세 전략을 수립합니다.")
 
     # A. Smart Search (Global - Above Tabs)

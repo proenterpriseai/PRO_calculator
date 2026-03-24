@@ -5,7 +5,7 @@ from core import f_w, comma_int_input, html_block, render_title_with_reset, Doll
 
 
 def render_dollar_insurance():
-    render_title_with_reset("💵 달러 설계", ["di_", "input_curr_rate", "curr_rate_val", "avg_rate_val", "rate_low_val", "rate_mid_val", "rate_high_val", "exchange_rate_fetched_at"], "reset_dollar", default_states=[DollarInsuranceState()])
+    render_title_with_reset("💵 달러종신보험 시뮬레이터", ["di_", "input_curr_rate", "curr_rate_val", "avg_rate_val", "rate_low_val", "rate_mid_val", "rate_high_val", "exchange_rate_fetched_at"], "reset_dollar", default_states=[DollarInsuranceState()])
     st.markdown("사망 보장 종신보험에 확정 금리와 환율 변동성을 활용한 해약환급금을 통해 전략적인 달러 마련의 기능까지 갖춘 보장성 플랜입니다.")
     
     # Data: Refund Rate Table (메트라이프 백만종 실제 보너스 구조 기반)
