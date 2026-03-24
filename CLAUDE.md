@@ -116,5 +116,16 @@ python -m py_compile tabs/dollar.py && python -m py_compile tabs/target_fund.py
 python -m py_compile tabs/retirement.py && python -m py_compile tabs/income_tax.py
 ```
 
+## ⚠️ Vercel 프로젝트 동기화 (반드시 준수)
+- **Vercel 코드**: 바탕화면 `calculator-vercel/` 폴더 (GitHub: `proenterpriseai/Procalculator`)
+- **Streamlit 코드**: 바탕화면 `계산기/` 폴더 (GitHub: `proenterpriseai/PRO_calculator`)
+- **제목/문구 변경 시 양쪽 동기화 필수** (Vercel index.html ↔ Streamlit tabs/*.py)
+
+## ⚠️ 배포 순서 (반드시 준수)
+1. **`.vercel.app` (pro-financecalculator.vercel.app) 먼저**: `calculator-vercel/` 수정 → git push → Vercel 배포 완료 확인
+2. **Streamlit 후속**: `계산기/` 수정 → git push → Streamlit 배포 완료 확인
+- 수정 작업 시 `.vercel.app` 배포를 건너뛰고 Streamlit만 배포하지 않는다
+- 코드 수정 후 반드시 push/배포까지 완료한 뒤 사용자에게 테스트 안내한다
+
 ## 수정 이력
 총 51건 수정 완료 (2025-03 15건 + 2026-03 36건). 상세 → memory `claudemd-calculator-history.md` 참조
